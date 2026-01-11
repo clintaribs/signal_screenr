@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SIGNAL_AUDIT_TERMINAL</title>
+    <style>
+        /* THE QUIRKY TERMINAL AESTHETIC */
+        body { 
+            background-color: #050505; 
+            color: #00ff41; 
+            font-family: 'Courier New', Courier, monospace; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Scanline effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        #sidebar {
+            width: 300px;
+            border-right: 2px solid #00ff41;
+            padding: 20px;
+            z-index: 3;
+            background: #050505;
+        }
+
+        #main-view {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .channel-link {
+            padding: 10px;
+            border: 1px solid #00ff41;
+            margin-bottom: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .channel-link:hover {
+            background: #00ff41;
+            color: #050505;
+            box-shadow: 0 0 10px #00ff41;
+        }
+
+        .msg-card {
+            border: 1px solid #00ff41;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: rgba(0, 255, 65, 0.05);
+            position: relative;
+        }
+
+        .msg-meta { font-size: 0.8em; color: #008f11; margin-bottom: 10px; }
+        .edit-tag { color: #ff0000; font-weight: bold; border: 1px solid #ff0000; padding: 2px 5px; font-size: 0.7em; }
+        
+        h1 { text-shadow: 0 0 5px #00ff41; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2>SOURCE_LIST</h2>
+        <p>Click to inspect:</p>
+        <div id="channels-nav">
+            </div>
+    </div>
+
+    <div id="main-view">
+        <h1 id="view-title">SYSTEM_IDLE</h1>
+        <div id="feed">
+            <p>> Waiting for selection...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+        // --- PASTE YOUR FIREBASE CONFIG HERE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0-1AGFajfTr03V2K7ycoC4hVbtZN7XA8",
+            authDomain: "signal-screenr.firebaseapp.com",
+            projectId: "signal-screenr",
+            storageBucket: "signal-screenr.firebasestorage.app",
+            messagingSenderId: "213700708679",
+            appId: "1:213700708679:web:28d05f350b39f4c0afa462"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Track seen channels to build the sidebar dynamically
+        const seenChannels = new Set();
+
+        // Load all messages initially to find channel names
+        const allMsgQuery = query(collection(db, "archived_messages"), orderBy("timestamp", "desc"));
+        
+        onSnapshot(allMsgQuery, (snapshot) => {
+            const nav = document.getElementById('channels-nav');
+            snapshot.docChanges().forEach((change) => {
+                const data = change.doc.data();
+                if (!seenChannels.has(data.channel_name)) {
+                    seenChannels.add(data.channel_name);
+                    const btn = document.createElement('div');
+                    btn.className = 'channel-link';
+                    btn.innerText = data.channel_name;
+                    btn.onclick = () => loadChannel(data.channel_name);
+                    nav.appendChild(btn);
+                }
+            });
+        });
+
+        function loadChannel(name) {
+            document.getElementById('view-title').innerText = `INSPECTING: ${name}`;
+            const q = query(collection(db, "archived_messages"), where("channel_name", "==", name), orderBy("timestamp", "desc"));
+            
+            onSnapshot(q, (snapshot) => {
+                const feed = document.getElementById('feed');
+                feed.innerHTML = "";
+                snapshot.forEach((doc) => {
+                    const msg = doc.data();
+                    const date = new Date(msg.timestamp * 1000).toLocaleString();
+                    const isEdited = msg.status === "EDITED";
+
+                    feed.innerHTML += `
+                        <div class="msg-card">
+                            <div class="msg-meta">
+                                [${date}] ID: ${msg.msg_id} 
+                                ${isEdited ? '<span class="edit-tag">EDITION_DETECTED</span>' : ''}
+                            </div>
+                            <div class="msg-body">${msg.text}</div>
+                        </div>
+                    `;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
