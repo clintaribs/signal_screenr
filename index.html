@@ -2,158 +2,173 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SIGNAL_AUDIT_TERMINAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOLD_SIGNAL_TRUTH_v2</title>
     <style>
-        /* THE QUIRKY TERMINAL AESTHETIC */
-        body { 
-            background-color: #050505; 
-            color: #00ff41; 
-            font-family: 'Courier New', Courier, monospace; 
-            margin: 0; 
-            display: flex; 
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Scanline effect */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-        }
-
-        #sidebar {
-            width: 300px;
-            border-right: 2px solid #00ff41;
-            padding: 20px;
-            z-index: 3;
-            background: #050505;
-        }
-
-        #main-view {
-            flex-grow: 1;
-            padding: 40px;
-            overflow-y: auto;
-            z-index: 3;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .channel-link {
-            padding: 10px;
-            border: 1px solid #00ff41;
-            margin-bottom: 10px;
-            cursor: pointer;
-            text-align: center;
-            transition: 0.3s;
-        }
-
-        .channel-link:hover {
-            background: #00ff41;
-            color: #050505;
-            box-shadow: 0 0 10px #00ff41;
-        }
-
-        .msg-card {
-            border: 1px solid #00ff41;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: rgba(0, 255, 65, 0.05);
-            position: relative;
-        }
-
-        .msg-meta { font-size: 0.8em; color: #008f11; margin-bottom: 10px; }
-        .edit-tag { color: #ff0000; font-weight: bold; border: 1px solid #ff0000; padding: 2px 5px; font-size: 0.7em; }
+        :root { --neon: #00ff41; --bg: #050505; --warn: #ffae00; --scam: #ff0000; }
         
-        h1 { text-shadow: 0 0 5px #00ff41; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Styles */
+        #sidebar { width: 300px; border-right: 2px solid var(--neon); padding: 20px; display: flex; flex-direction: column; flex-shrink: 0; }
+        #rank-list { margin-top: 20px; overflow-y: auto; }
+        
+        .channel-link { padding: 12px; border: 1px solid #222; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .channel-link:hover { border-color: var(--neon); background: rgba(0, 255, 65, 0.1); }
+
+        /* Main View Styles */
+        #main { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; position: relative; }
+        
+        #stats-bar { display: none; padding: 15px; border: 1px double var(--neon); margin-bottom: 20px; background: rgba(0, 255, 65, 0.05); }
+        .stat-box { text-align: center; flex: 1; }
+        .stat-val { display: block; font-size: 1.4em; font-weight: bold; }
+
+        #feed { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 10px; }
+        
+        /* Message Card Styles */
+        .msg-card { border: 1px solid #222; padding: 15px; margin-bottom: 15px; background: rgba(255, 255, 255, 0.02); }
+        .deleted-msg { border-color: var(--scam); background: rgba(255, 0, 0, 0.05); }
+        
+        .msg-meta { display: flex; align-items: center; gap: 12px; font-size: 0.8em; border-bottom: 1px solid #222; padding-bottom: 8px; margin-bottom: 10px; }
+        .tag { padding: 2px 6px; border: 1px solid; font-weight: bold; font-size: 0.75em; }
+        .tag-sig { border-color: var(--neon); color: var(--neon); }
+        .tag-edit { border-color: var(--warn); color: var(--warn); }
+        .tag-del { border-color: var(--scam); color: var(--scam); }
+
+        /* Mobile Fixes */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: 200px; border-right: none; border-bottom: 2px solid var(--neon); }
+        }
+
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        ::-webkit-scrollbar-thumb { background: var(--neon); }
     </style>
 </head>
 <body>
 
-    <div id="sidebar">
-        <h2>SOURCE_LIST</h2>
-        <p>Click to inspect:</p>
-        <div id="channels-nav">
-            </div>
-    </div>
+<div id="sidebar">
+    <h2 style="margin-top:0;">[RANKINGS]</h2>
+    <div id="rank-list">Loading Truth Scores...</div>
+</div>
 
-    <div id="main-view">
-        <h1 id="view-title">SYSTEM_IDLE</h1>
-        <div id="feed">
-            <p>> Waiting for selection...</p>
+<div id="main">
+    <h1 id="current-channel" style="margin-top:0;">SYSTEM_IDLE</h1>
+    
+    <div id="stats-bar">
+        <div style="display: flex;">
+            <div class="stat-box"><span id="s-total" class="stat-val">0</span>SIGNALS</div>
+            <div class="stat-box"><span id="s-edit" class="stat-val" style="color:var(--warn)">0</span>EDITS</div>
+            <div class="stat-box"><span id="s-del" class="stat-val" style="color:var(--scam)">0</span>DELETES</div>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    <div id="feed"></div>
+</div>
 
-        // --- PASTE YOUR FIREBASE CONFIG HERE ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyB0-1AGFajfTr03V2K7ycoC4hVbtZN7XA8",
-            authDomain: "signal-screenr.firebaseapp.com",
-            projectId: "signal-screenr",
-            storageBucket: "signal-screenr.firebasestorage.app",
-            messagingSenderId: "213700708679",
-            appId: "1:213700708679:web:28d05f350b39f4c0afa462"
-        };
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getFirestore, collection, query, onSnapshot, orderBy, where } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const firebaseConfig = {
+        apiKey: "AIzaSyB0-1AGFajfTr03V2K7ycoC4hVbtZN7XA8",
+        authDomain: "signal-screenr.firebaseapp.com",
+        projectId: "signal-screenr",
+        storageBucket: "signal-screenr.firebasestorage.app",
+        messagingSenderId: "213700708679",
+        appId: "1:213700708679:web:28d05f350b39f4c0afa462"
+    };
 
-        // Track seen channels to build the sidebar dynamically
-        const seenChannels = new Set();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // Load all messages initially to find channel names
-        const allMsgQuery = query(collection(db, "archived_messages"), orderBy("timestamp", "desc"));
-        
-        onSnapshot(allMsgQuery, (snapshot) => {
-            const nav = document.getElementById('channels-nav');
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                if (!seenChannels.has(data.channel_name)) {
-                    seenChannels.add(data.channel_name);
-                    const btn = document.createElement('div');
-                    btn.className = 'channel-link';
-                    btn.innerText = data.channel_name;
-                    btn.onclick = () => loadChannel(data.channel_name);
-                    nav.appendChild(btn);
-                }
-            });
+    // 1. Sidebar Logic (Truth Scores)
+    onSnapshot(query(collection(db, "archived_messages")), (snap) => {
+        const stats = {};
+        snap.forEach(doc => {
+            const m = doc.data();
+            if (!stats[m.channel_name]) stats[m.channel_name] = { total: 0, bad: 0 };
+            if (m.is_signal) {
+                stats[m.channel_name].total++;
+                if (m.status !== "ORIGINAL") stats[m.channel_name].bad++;
+            }
         });
 
-        function loadChannel(name) {
-            document.getElementById('view-title').innerText = `INSPECTING: ${name}`;
-            const q = query(collection(db, "archived_messages"), where("channel_name", "==", name), orderBy("timestamp", "desc"));
-            
-            onSnapshot(q, (snapshot) => {
-                const feed = document.getElementById('feed');
-                feed.innerHTML = "";
-                snapshot.forEach((doc) => {
-                    const msg = doc.data();
-                    const date = new Date(msg.timestamp * 1000).toLocaleString();
-                    const isEdited = msg.status === "EDITED";
+        const ranked = Object.keys(stats).map(name => {
+            const s = stats[name];
+            const score = s.total === 0 ? 100 : Math.round(((s.total - s.bad) / s.total) * 100);
+            return { name, score, count: s.total };
+        }).sort((a, b) => b.score - a.score);
 
-                    feed.innerHTML += `
-                        <div class="msg-card">
-                            <div class="msg-meta">
-                                [${date}] ID: ${msg.msg_id} 
-                                ${isEdited ? '<span class="edit-tag">EDITION_DETECTED</span>' : ''}
-                            </div>
-                            <div class="msg-body">${msg.text}</div>
-                        </div>
-                    `;
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        ranked.forEach(c => {
+            const div = document.createElement('div');
+            div.className = "channel-link";
+            const color = c.score > 85 ? 'var(--neon)' : (c.score > 60 ? 'var(--warn)' : 'var(--scam)');
+            div.innerHTML = `
+                <div style="font-weight:bold">${c.name}</div>
+                <div style="color:${color}; font-size:0.85em">TRUTH_SCORE: ${c.score}%</div>
+                <div style="color:#666; font-size:0.7em">SIGS AUDITED: ${c.count}</div>
+            `;
+            div.onclick = () => loadFeed(c.name);
+            list.appendChild(div);
+        });
+    });
+
+    // 2. Load Feed (Newest at Bottom)
+    function loadFeed(name) {
+        document.getElementById('current-channel').innerText = `AUDITING: ${name}`;
+        document.getElementById('stats-bar').style.display = 'block';
+        
+        // Query: Ascending order places latest at bottom
+        const q = query(collection(db, "archived_messages"), where("channel_name", "==", name), orderBy("timestamp", "asc"));
+        
+        onSnapshot(q, (snap) => {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = "";
+            let sigs = 0, eds = 0, dels = 0;
+            
+            snap.forEach(doc => {
+                const m = doc.data();
+                
+                // DATE FORMATTING (DD/MM/YYYY HH:mm:ss)
+                const stamp = new Date(m.timestamp * 1000).toLocaleString('en-GB', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    hour12: false
                 });
+
+                if (m.is_signal) {
+                    sigs++;
+                    if (m.status === "EDITED") eds++;
+                    if (m.status === "DELETED") dels++;
+                }
+
+                const card = document.createElement('div');
+                card.className = `msg-card ${m.status === 'DELETED' ? 'deleted-msg' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="msg-meta">
+                        <span style="opacity:0.7">[${stamp}]</span>
+                        <span>ID:${m.msg_id}</span>
+                        ${m.is_signal ? '<span class="tag tag-sig">SIGNAL</span>' : ''}
+                        ${m.status === 'EDITED' ? '<span class="tag tag-edit">EDITED</span>' : ''}
+                        ${m.status === 'DELETED' ? '<span class="tag tag-del">DELETED</span>' : ''}
+                    </div>
+                    <div style="white-space: pre-wrap;">${m.text}</div>
+                `;
+                feed.appendChild(card);
             });
-        }
-    </script>
+
+            document.getElementById('s-total').innerText = sigs;
+            document.getElementById('s-edit').innerText = eds;
+            document.getElementById('s-del').innerText = dels;
+            
+            // Auto-scroll to bottom
+            setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 50);
+        });
+    }
+</script>
 </body>
 </html>
