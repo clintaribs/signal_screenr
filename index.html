@@ -40,7 +40,7 @@
     </style>
 </head>
 
-<body class="bg-[#0b1118] text-[#e0e6ed] h-screen flex overflow-hidden font-sans">
+<body class="bg-[#0b1118] text-[#e0e6ed] h-screen flex flex-col overflow-hidden font-sans">
 
     <!-- Mobile Header -->
     <header class="md:hidden bg-[#161d27] border-b border-[#232d3d] p-4 flex justify-between items-center z-20">
@@ -208,11 +208,17 @@
             const allChannelNames = [...new Set([...msgChannels, ...statChannels])];
 
             // Sort by Score (High to Low)
-            const sortedChannels = allChannelNames.sort((a, b) => {
-                const scoreA = providerStats[a]?.score || 0;
-                const scoreB = providerStats[b]?.score || 0;
-                return scoreB - scoreA;
-            });
+            const sortedChannels = allChannelNames
+                .filter(ch => {
+                    const s = providerStats[ch];
+                    // Show if active is true OR undefined (default). Hide only if explicitly false.
+                    return s?.active !== false;
+                })
+                .sort((a, b) => {
+                    const scoreA = providerStats[a]?.score || 0;
+                    const scoreB = providerStats[b]?.score || 0;
+                    return scoreB - scoreA;
+                });
 
             sortedChannels.forEach(channel => {
                 const stats = providerStats[channel] || { score: 0 }; // Default score if no stats
