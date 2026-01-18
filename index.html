@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRUTHWATCH | Supabase Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -55,7 +56,7 @@
     <div class="flex flex-grow overflow-hidden relative">
         <!-- Sidebar -->
         <aside id="sidebar"
-            class="absolute md:relative w-80 h-full border-r border-[#232d3d] flex flex-col bg-[#0f151e] transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
+            class="fixed inset-y-0 left-0 md:relative w-80 h-full border-r border-[#232d3d] flex flex-col bg-[#0f151e] transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 pt-0 md:pt-0 shadow-2xl md:shadow-none">
             <div class="p-6 border-b border-[#232d3d] hidden md:block">
                 <h1 class="text-2xl font-bold tracking-wider text-blue-400">TruthWatch</h1>
                 <div class="text-xs text-gray-500 mt-1">Powered by Supabase</div>
@@ -198,20 +199,38 @@
         }
 
         function renderChannels() {
-            // Collect channel names from messages AND stats
+            const list = document.getElementById('channel-list');
+            list.innerHTML = '';
+
+            // Collect all unique channel names from messages and stats
             const msgChannels = new Set(allData.map(d => d.channel_name));
             const statChannels = new Set(Object.keys(providerStats));
-            const names = [...new Set([...msgChannels, ...statChannels])].sort();
+            const allChannelNames = [...new Set([...msgChannels, ...statChannels])];
 
-            document.getElementById('channel-list').innerHTML = names.map(n => {
-                const stats = providerStats[n] || { score: 100 };
-                const isActive = n === currentChannel;
-                return `
-            <div onclick="selectChannel('${n}')" class="p-3 rounded mx-2 cursor-pointer flex justify-between items-center transition ${isActive ? 'bg-[#232d3d] border-l-4 border-blue-500' : 'hover:bg-[#1c2531] border-l-4 border-transparent'}">
-                <span class="font-medium truncate max-w-[160px]">${n}</span>
-                <span class="text-xs font-bold ${stats.score < 80 ? 'text-red-500' : 'text-green-500'} bg-black/30 px-2 py-1 rounded">${stats.score}</span>
-            </div>`;
-            }).join('');
+            // Sort by Score (High to Low)
+            const sortedChannels = allChannelNames.sort((a, b) => {
+                const scoreA = providerStats[a]?.score || 0;
+                const scoreB = providerStats[b]?.score || 0;
+                return scoreB - scoreA;
+            });
+
+            sortedChannels.forEach(channel => {
+                const stats = providerStats[channel] || { score: 0 }; // Default score if no stats
+                const isActive = channel === currentChannel;
+
+                const div = document.createElement('div');
+                div.className = `p-3 rounded mx-2 cursor-pointer flex justify-between items-center transition ${isActive ? 'bg-[#232d3d] border-l-4 border-blue-500' : 'hover:bg-[#1c2531] border-l-4 border-transparent'}`;
+                div.onclick = () => {
+                    selectChannel(channel);
+                    if (window.innerWidth < 768) toggleMobileMenu(); // Auto-close on mobile
+                };
+
+                div.innerHTML = `
+                    <span class="font-medium truncate max-w-[160px]">${channel}</span>
+                    <span class="text-xs font-bold ${stats.score < 80 ? 'text-red-500' : 'text-green-500'} bg-black/30 px-2 py-1 rounded">${stats.score}</span>
+                `;
+                list.appendChild(div);
+            });
         }
 
         function renderFeed() {
@@ -344,10 +363,10 @@
                     <div class="bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg">
                         <div class="mb-2 md:mb-0 w-full">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="px-3 py-1 rounded font-bold text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
+                                <span class="px-3 py-1 rounded font-bold text-xs md:text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
                                 <span class="text-xs text-gray-500">${new Date(s.timestamp * 1000).toLocaleString('en-GB')}</span>
                             </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono text-gray-400 bg-[#161d27] p-2 rounded">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm md:text-xs font-mono text-gray-400 bg-[#161d27] p-2 rounded">
                                 <div><span class="text-gray-600 block text-[10px] uppercase">Entry</span>${s.entry}</div>
                                 <div><span class="text-gray-600 block text-[10px] uppercase">TP</span>${s.tp || '--'}</div>
                                 <div><span class="text-gray-600 block text-[10px] uppercase">SL</span>${s.sl || '--'}</div>
