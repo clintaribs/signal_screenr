@@ -1,218 +1,397 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>TRUTHWATCH Audit</title>
+    <title>TRUTHWATCH | Supabase Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #0b1118; --surface: #161d27; --text: #e0e6ed;
-            --primary: #3e92cc; --danger: #ff5f5f; --warn: #f4a261; --success: #4caf50;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; 
-            margin: 0; overflow: hidden; height: 100vh;
+        .tag-SIGNAL {
+            background: #4b5563;
         }
 
-        #app { display: flex; height: 100vh; width: 100vw; }
-        
-        /* --- SIDEBAR --- */
-        #sidebar { 
-            width: 100%; border-right: 1px solid #232d3d; display: flex; flex-direction: column; background: var(--bg);
-        }
-        .header-area { padding: 25px; border-bottom: 1px solid #232d3d; background: var(--bg); }
-        #rank-list { flex-grow: 1; overflow-y: auto; padding: 15px; }
-
-        .channel-card {
-            background: var(--surface); padding: 16px; border-radius: 12px; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center; border: 1px solid #232d3d; cursor: pointer;
-        }
-        .truth-score { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-
-        /* --- AUDIT MODAL (The Fix is Here) --- */
-        #modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100; display: flex; flex-direction: column;
-        }
-        #modal.open { transform: translateX(0); } /* Slides in from right like Telegram */
-
-        /* 20% Header Stats */
-        #modal-header {
-            height: 22%; min-height: 160px; padding: 15px; display: flex; flex-direction: column;
-            border-bottom: 1px solid #232d3d; background: var(--surface); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        
-        .nav-row { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-        .back-btn { 
-            background: #232d3d; border: none; color: white; padding: 8px 12px; 
-            border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold;
+        .tag-EDITED {
+            background: #ffa502;
+            color: black;
         }
 
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .stat-item { text-align: center; background: #0b1118; padding: 8px; border-radius: 8px; border: 1px solid #232d3d; }
-        .stat-item label { font-size: 0.6rem; color: #8899a6; display: block; text-transform: uppercase; margin-bottom: 2px; }
-        .stat-item span { font-weight: bold; font-family: monospace; font-size: 1rem; }
-
-        /* 80% History */
-        #modal-history { 
-            height: 78%; overflow-y: auto; padding: 20px; 
-            display: flex; flex-direction: column; scroll-behavior: smooth;
+        .tag-DELETED {
+            background: #ff4757;
         }
-        
-        .msg-bubble { 
-            background: var(--surface); padding: 15px; border-radius: 14px; margin-bottom: 12px; 
-            font-size: 0.95rem; line-height: 1.4; border: 1px solid #232d3d;
-            max-width: 92%; align-self: flex-start;
-        }
-        .msg-meta { font-size: 0.7rem; color: #8899a6; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        
-        .tag { font-size: 0.6rem; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .tag-EDITED { background: rgba(244, 162, 97, 0.2); color: var(--warn); }
-        .tag-DELETED { background: rgba(255, 95, 95, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
-        @media (min-width: 768px) {
-            #sidebar { width: 400px; }
-            #modal { position: relative; transform: none; border-left: 1px solid #232d3d; }
-            .back-btn { display: none; }
+        .tag-TP_SIGNAL {
+            background: #a55eea;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #161d27;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #232d3d;
+            border-radius: 4px;
         }
     </style>
 </head>
-<body>
 
-<div id="app">
-    <div id="sidebar">
-        <div class="header-area">
-            <h2 style="margin:0; font-size: 1.6rem; letter-spacing: -1px; color: var(--primary);">TRUTHWATCH</h2>
-            <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
-                <div style="width:8px; height:8px; background:var(--success); border-radius:50%;"></div>
-                <small style="color: #8899a6; font-weight: 600;">LIVE_AUDIT_STREAMING</small>
+<body class="bg-[#0b1118] text-[#e0e6ed] h-screen flex overflow-hidden font-sans">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-[#161d27] border-b border-[#232d3d] p-4 flex justify-between items-center z-20">
+        <div class="font-bold text-blue-400">TruthWatch</div>
+        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                </path>
+            </svg>
+        </button>
+    </header>
+
+    <div class="flex flex-grow overflow-hidden relative">
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="absolute md:relative w-80 h-full border-r border-[#232d3d] flex flex-col bg-[#0f151e] transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
+            <div class="p-6 border-b border-[#232d3d] hidden md:block">
+                <h1 class="text-2xl font-bold tracking-wider text-blue-400">TruthWatch</h1>
+                <div class="text-xs text-gray-500 mt-1">Powered by Supabase</div>
+                <button onclick="openLeaderboard()"
+                    class="w-full mt-6 bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold transition">🏆
+                    Leaderboard</button>
             </div>
+            <div class="p-4 md:hidden flex justify-between items-center border-b border-[#232d3d]">
+                <span class="font-bold">Channels</span>
+                <button onclick="toggleMobileMenu()"
+                    class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <!-- Mobile Leaderboard Button -->
+            <div class="md:hidden p-4">
+                <button onclick="openLeaderboard()"
+                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold transition">🏆
+                    Leaderboard</button>
+            </div>
+
+            <div id="channel-list" class="flex-grow overflow-y-auto p-2 space-y-1"></div>
+        </aside>
+
+        <!-- Overlay for mobile sidebar -->
+        <div id="mobile-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden">
         </div>
-        <div id="rank-list"></div>
+
+        <!-- Main Content -->
+        <main class="flex-grow flex flex-col relative w-full">
+            <header class="p-4 bg-[#161d27] border-b border-[#232d3d] flex justify-between items-center shadow-md z-10">
+                <div>
+                    <h2 id="active-title" class="text-xl font-semibold truncate max-w-[200px]">Select Provider</h2>
+                    <div id="active-score" class="text-sm text-gray-400"></div>
+                </div>
+                <div id="header-btns" class="hidden flex space-x-2">
+                    <button onclick="openStats()"
+                        class="bg-[#232d3d] hover:bg-[#2f3b4f] px-3 py-2 rounded border border-[#3e4d5e] transition text-sm">📊</button>
+                    <button onclick="openPerf()"
+                        class="bg-[#232d3d] hover:bg-[#2f3b4f] px-3 py-2 rounded border border-[#3e4d5e] transition text-sm">📈</button>
+                </div>
+            </header>
+
+            <div id="feed" class="flex-grow p-4 md:p-6 overflow-y-auto flex flex-col space-y-4">
+                <div class="text-center text-gray-600 mt-20">Select a channel to view auditable signals.</div>
+            </div>
+        </main>
     </div>
 
-    <div id="modal">
-        <div id="modal-header">
-            <div class="nav-row">
-                <button class="back-btn" onclick="closeModal()">← BACK</button>
-                <h3 id="current-name" style="margin:0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Select Provider</h3>
+    <!-- Modals -->
+    <div id="modal-bg"
+        class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+        onclick="closeModal(event)">
+        <div class="bg-[#161d27] w-full max-w-3xl rounded-xl border border-blue-500/30 shadow-2xl flex flex-col max-h-[85vh]"
+            onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-[#232d3d] flex justify-between items-center bg-[#1c2531] rounded-t-xl">
+                <h2 id="modal-title" class="text-xl md:text-2xl font-bold truncate">Details</h2>
+                <button onclick="closeModal()"
+                    class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
-            <div class="stat-grid">
-                <div class="stat-item"><label>Signals</label><span id="s-total">0</span></div>
-                <div class="stat-item"><label>Edits</label><span id="s-edit" style="color:var(--warn)">0</span></div>
-                <div class="stat-item"><label>Deletes</label><span id="s-del" style="color:var(--danger)">0</span></div>
-            </div>
+            <div id="modal-content" class="p-4 md:p-8 overflow-y-auto"></div>
         </div>
-        <div id="modal-history"></div>
     </div>
-</div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getFirestore, collection, query, onSnapshot, orderBy, where } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    <script>
+        const SUPABASE_URL = "https://pbxxmbntchgmwencefdr.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBieHhtYm50Y2hnbXdlbmNlZmRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTQ1NjAsImV4cCI6MjA4NDE3MDU2MH0.pD6IHRH9_XyA3f3YrrftjPZ4xLFlGc6WE6lLiF06r4Y";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyB0-1AGFajfTr03V2K7ycoC4hVbtZN7XA8",
-        authDomain: "signal-screenr.firebaseapp.com",
-        projectId: "signal-screenr",
-        storageBucket: "signal-screenr.firebasestorage.app",
-        messagingSenderId: "213700708679",
-        appId: "1:213700708679:web:28d05f350b39f4c0afa462"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        // Fix: createClient is inside the supabase global object from CDN
+        const { createClient } = supabase;
+        const dbClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Sidebar Logic
-    onSnapshot(query(collection(db, "archived_messages")), (snap) => {
-        const stats = {};
-        snap.forEach(doc => {
-            const m = doc.data();
-            if (!stats[m.channel_name]) stats[m.channel_name] = { total: 0, bad: 0 };
-            if (m.is_signal) {
-                stats[m.channel_name].total++;
-                if (m.status !== "ORIGINAL") stats[m.channel_name].bad++;
+        let allData = [];
+        let providerStats = {};
+        let currentChannel = "";
+
+        // Mobile Toggle
+        window.toggleMobileMenu = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        // Fetch Initial Data
+        async function init() {
+            const { data: msgs } = await dbClient.from('archived_messages').select('*');
+            if (msgs) allData = msgs;
+
+            const { data: stats } = await dbClient.from('provider_stats').select('*');
+            if (stats) stats.forEach(s => providerStats[s.channel_name] = s);
+
+            renderChannels();
+
+            // Realtime Subscription
+            dbClient.channel('public:archived_messages')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'archived_messages' }, payload => {
+                    if (payload.eventType === 'INSERT') {
+                        allData.push(payload.new);
+                    } else if (payload.eventType === 'UPDATE') {
+                        const idx = allData.findIndex(d => d.msg_id === payload.new.msg_id);
+                        if (idx !== -1) allData[idx] = payload.new;
+                    } else if (payload.eventType === 'DELETE') {
+                        // Note: Payload.old only has ID usually
+                        allData = allData.filter(d => d.msg_id !== payload.old.msg_id);
+                    }
+                    if (currentChannel) renderFeed();
+                    renderChannels();
+                })
+                .subscribe();
+
+            dbClient.channel('public:provider_stats')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'provider_stats' }, payload => {
+                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                        providerStats[payload.new.channel_name] = payload.new;
+                    }
+                    renderChannels();
+                    if (currentChannel) updateHeaderStats();
+                })
+                .subscribe();
+        }
+        init();
+
+        window.selectChannel = (name) => {
+            currentChannel = name;
+            document.getElementById('active-title').innerText = name;
+            document.getElementById('header-btns').classList.remove('hidden');
+            updateHeaderStats();
+            renderFeed();
+            renderChannels();
+
+            // Close mobile menu if open
+            if (!document.getElementById('sidebar').classList.contains('-translate-x-full')) {
+                toggleMobileMenu();
             }
-        });
+        };
 
-        const sorted = Object.keys(stats).map(name => {
-            const s = stats[name];
-            const score = s.total === 0 ? 100 : Math.round(((s.total - s.bad) / s.total) * 100);
-            return { name, score, total: s.total };
-        }).sort((a, b) => b.score - a.score);
+        function updateHeaderStats() {
+            const stats = providerStats[currentChannel];
+            const score = stats ? stats.score : 100;
+            document.getElementById('active-score').innerHTML = `Truth Score: <span class="${score < 80 ? 'text-red-500' : 'text-green-400'} font-bold">${score}</span>`;
+        }
 
-        const list = document.getElementById('rank-list');
-        list.innerHTML = "";
-        sorted.forEach(c => {
-            const div = document.createElement('div');
-            div.className = "channel-card";
-            div.innerHTML = `
-                <div><strong>${c.name}</strong><br><small style="color:#8899a6">${c.total} Signals</small></div>
-                <div class="truth-score">${c.score}%</div>
-            `;
-            div.onclick = () => loadChannel(c.name);
-            list.appendChild(div);
-        });
-    });
+        function renderChannels() {
+            // Collect channel names from messages AND stats
+            const msgChannels = new Set(allData.map(d => d.channel_name));
+            const statChannels = new Set(Object.keys(providerStats));
+            const names = [...new Set([...msgChannels, ...statChannels])].sort();
 
-    let currentListener = null;
+            document.getElementById('channel-list').innerHTML = names.map(n => {
+                const stats = providerStats[n] || { score: 100 };
+                const isActive = n === currentChannel;
+                return `
+            <div onclick="selectChannel('${n}')" class="p-3 rounded mx-2 cursor-pointer flex justify-between items-center transition ${isActive ? 'bg-[#232d3d] border-l-4 border-blue-500' : 'hover:bg-[#1c2531] border-l-4 border-transparent'}">
+                <span class="font-medium truncate max-w-[160px]">${n}</span>
+                <span class="text-xs font-bold ${stats.score < 80 ? 'text-red-500' : 'text-green-500'} bg-black/30 px-2 py-1 rounded">${stats.score}</span>
+            </div>`;
+            }).join('');
+        }
 
-    window.loadChannel = function(name) {
-        document.getElementById('modal').classList.add('open');
-        document.getElementById('current-name').innerText = name;
-        
-        const q = query(collection(db, "archived_messages"), where("channel_name", "==", name), orderBy("timestamp", "asc"));
-        
-        if (currentListener) currentListener();
+        function renderFeed() {
+            const feed = document.getElementById('feed');
+            const msgs = allData.filter(m => m.channel_name === currentChannel).sort((a, b) => a.timestamp - b.timestamp);
 
-        currentListener = onSnapshot(q, (snap) => {
-            const history = document.getElementById('modal-history');
-            history.innerHTML = "";
-            let sTotal = 0, sEdit = 0, sDel = 0;
+            if (msgs.length === 0) {
+                feed.innerHTML = '<div class="text-center text-gray-500 mt-10">No messages found.</div>';
+                return;
+            }
 
-            snap.forEach(doc => {
-                const m = doc.data();
-                if (m.is_signal) {
-                    sTotal++;
-                    if (m.status === "EDITED") sEdit++;
-                    if (m.status === "DELETED") sDel++;
+            feed.innerHTML = msgs.map(m => {
+                const time = new Date(m.timestamp * 1000).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                let tagsHtml = '';
+                if (m.is_signal) tagsHtml += `<span class="tag-SIGNAL text-[10px] px-2 py-0.5 rounded font-bold mr-2">SIGNAL</span>`;
+                if (m.status === 'EDITED') tagsHtml += `<span class="tag-EDITED text-[10px] px-2 py-0.5 rounded font-bold mr-2">EDITED</span>`;
+                if (m.status === 'DELETED') tagsHtml += `<span class="tag-DELETED text-[10px] px-2 py-0.5 rounded font-bold mr-2 text-white">DELETED</span>`;
+                if (m.tags && m.tags.includes('TP_SIGNAL')) tagsHtml += `<span class="tag-TP_SIGNAL text-[10px] px-2 py-0.5 rounded font-bold text-white mr-2">TP_SIGNAL</span>`;
+
+                let details = '';
+                if (m.is_signal && m.entry) {
+                    details = `<div class="mt-2 text-xs text-blue-300 font-mono bg-black/20 p-2 rounded inline-block w-full overflow-x-auto">
+                    ${m.action} @ ${m.entry} | TP: ${m.tp || '--'} | SL: ${m.sl || '--'} | Mkt: ${m.market_at_time || '--'}
+                </div>`;
                 }
 
-                const div = document.createElement('div');
-                div.className = "msg-bubble";
-                const statusTag = m.status !== "ORIGINAL" ? `<span class="tag tag-${m.status}">${m.status}</span>` : "";
-                
-                const time = new Date(m.timestamp*1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const date = new Date(m.timestamp*1000).toLocaleDateString('en-GB', {day:'2-digit', month:'short'});
-
-                div.innerHTML = `
-                    <div class="msg-meta">
-                        ${statusTag}
-                        <span>${date}, ${time}</span>
-                    </div>
-                    <div style="white-space: pre-wrap;">${m.text}</div>
-                `;
-                history.appendChild(div);
-            });
-
-            document.getElementById('s-total').innerText = sTotal;
-            document.getElementById('s-edit').innerText = sEdit;
-            document.getElementById('s-del').innerText = sDel;
-
-            // Jump to newest
-            setTimeout(() => { history.scrollTop = history.scrollHeight; }, 100);
-        });
-    };
-
-    window.closeModal = () => {
-        document.getElementById('modal').classList.remove('open');
-        // Optional: stop listening when closed to save data
-        if (currentListener) {
-            currentListener();
-            currentListener = null;
+                return `<div class="bg-[#161d27] p-4 rounded-lg border border-[#232d3d] self-start w-full max-w-3xl hover:border-blue-500/30 transition shadow-sm">
+                <div class="text-[11px] text-gray-500 mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div>${time}</div>
+                    <div class="flex flex-wrap gap-1">${tagsHtml}</div>
+                </div>
+                <div class="whitespace-pre-wrap text-sm leading-relaxed break-words">${m.text || "[Content Deleted]"}</div>
+                ${details}
+            </div>`;
+            }).join('');
+            feed.scrollTop = feed.scrollHeight;
         }
-    };
-</script>
+
+        window.closeModal = (e) => {
+            if (!e || e.target.id === 'modal-bg' || !e.target.closest('#modal-content')) {
+                document.getElementById('modal-bg').classList.add('hidden');
+            }
+        };
+        document.querySelector('button[onclick="closeModal()"]').onclick = () => document.getElementById('modal-bg').classList.add('hidden');
+
+        window.openLeaderboard = () => {
+            const sorted = Object.entries(providerStats)
+                .sort(([, a], [, b]) => b.score - a.score);
+
+            document.getElementById('modal-title').innerText = "Global Leaderboard";
+            document.getElementById('modal-content').innerHTML = `
+            <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[300px]">
+                <thead>
+                    <tr class="text-gray-500 border-b border-[#232d3d]">
+                        <th class="p-3">Rank</th>
+                        <th class="p-3">Provider</th>
+                        <th class="p-3">Score</th>
+                        <th class="p-3 text-center">Edits</th>
+                        <th class="p-3 text-center">Del</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sorted.map(([name, s], i) => `
+                        <tr class="border-b border-[#232d3d] hover:bg-[#1c2531]">
+                            <td class="p-3 font-mono text-gray-500">#${i + 1}</td>
+                            <td class="p-3 font-bold text-blue-400 whitespace-nowrap">${name}</td>
+                            <td class="p-3 font-bold ${s.score >= 80 ? 'text-green-500' : 'text-red-500'}">${s.score}</td>
+                            <td class="p-3 text-orange-400 text-center">${s.edits}</td>
+                            <td class="p-3 text-red-500 text-center">${s.deletes}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            </div>`;
+            document.getElementById('modal-bg').classList.remove('hidden');
+            if (!document.getElementById('sidebar').classList.contains('-translate-x-full')) {
+                toggleMobileMenu();
+            }
+        };
+
+        window.openStats = () => {
+            const stats = providerStats[currentChannel] || { score: 100, edits: 0, deletes: 0 };
+            const sigs = allData.filter(m => m.channel_name === currentChannel && m.is_signal).length;
+
+            document.getElementById('modal-title').innerText = `${currentChannel} Stats`;
+            document.getElementById('modal-content').innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-white">${sigs}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Signals</div>
+                </div>
+                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold ${stats.score >= 80 ? 'text-green-500' : 'text-red-500'}">${stats.score}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Score</div>
+                </div>
+                 <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-yellow-500">${stats.win_rate != null ? stats.win_rate + '%' : 'N/A'}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Win Rate</div>
+                </div>
+                 <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-orange-400">${stats.edits}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Edits</div>
+                </div>
+                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-red-500">${stats.deletes}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Deletes</div>
+                </div>
+            </div>`;
+            document.getElementById('modal-bg').classList.remove('hidden');
+        };
+
+        window.openPerf = () => {
+            const sigs = allData.filter(m => m.channel_name === currentChannel && m.is_signal).sort((a, b) => a.timestamp - b.timestamp);
+
+            document.getElementById('modal-title').innerText = "Trade Performance";
+            document.getElementById('modal-content').innerHTML = `
+            <div class="space-y-4">
+                ${sigs.length === 0 ? '<div class="text-gray-500 text-center">No trades recorded.</div>' : ''}
+                ${sigs.map(s => {
+                const isWin = s.outcome === 'WIN';
+                const isLoss = s.outcome === 'LOSS';
+                const isBuy = s.action === 'BUY';
+                const borderClass = isWin ? 'border-green-500' : isLoss ? 'border-red-500' : 'border-blue-500';
+                const outcomeClass = isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-blue-400';
+                const typeClass = isBuy ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10';
+
+                return `
+                    <div class="bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg">
+                        <div class="mb-2 md:mb-0 w-full">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="px-3 py-1 rounded font-bold text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
+                                <span class="text-xs text-gray-500">${new Date(s.timestamp * 1000).toLocaleString('en-GB')}</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono text-gray-400 bg-[#161d27] p-2 rounded">
+                                <div><span class="text-gray-600 block text-[10px] uppercase">Entry</span>${s.entry}</div>
+                                <div><span class="text-gray-600 block text-[10px] uppercase">TP</span>${s.tp || '--'}</div>
+                                <div><span class="text-gray-600 block text-[10px] uppercase">SL</span>${s.sl || '--'}</div>
+                                <div><span class="text-gray-600 block text-[10px] uppercase">Mkt Price</span>${s.market_at_time || '--'}</div>
+                            </div>
+                        </div>
+                        <div class="text-right md:ml-6 min-w-[100px] mt-3 md:mt-0 border-t md:border-t-0 border-[#232d3d] pt-3 md:pt-0 flex flex-col items-end">
+                             <div class="text-xl md:text-2xl font-bold ${outcomeClass}">${s.outcome}</div>
+                            <div class="text-xs text-gray-500">Run: <span class="${s.max_run_pips > 0 ? 'text-green-400' : 'text-gray-400'}">${s.max_run_pips} pips</span></div>
+                            ${s.outcome === 'LIVE' ? `
+                            <button onclick="refreshSignal(${s.msg_id})" class="mt-2 text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded border border-blue-600/50 transition flex items-center gap-1" title="Ping MT5 Update">
+                                🔄 Update
+                            </button>` : ''}
+                        </div>
+                    </div>`;
+            }).join('')}
+            </div>`;
+            document.getElementById('modal-bg').classList.remove('hidden');
+        }
+        async function refreshSignal(msgId) {
+            const btn = event.currentTarget;
+            btn.classList.add('animate-spin');
+
+            try {
+                // Request Update via Database
+                const { error } = await dbClient
+                    .from('archived_messages')
+                    .update({ refresh_needed: true })
+                    .eq('msg_id', msgId);
+
+                if (error) throw error;
+
+                setTimeout(() => {
+                    btn.classList.remove('animate-spin');
+                    btn.innerHTML = "⏳ Sent";
+                    btn.disabled = true;
+                }, 1000);
+
+            } catch (e) {
+                alert("Error sending refresh request: " + e.message);
+                btn.classList.remove('animate-spin');
+            }
+        }
+    </script>
 </body>
+
 </html>
