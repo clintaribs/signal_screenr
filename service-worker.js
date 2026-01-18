@@ -1,6 +1,6 @@
 const CACHE_NAME = 'truthwatch-v1';
 const ASSETS = [
-    './screenr_god.html',
+    './index.html',
     './manifest.json',
     './logo.png',
     'https://cdn.tailwindcss.com',
@@ -46,3 +46,4 @@ self.addEventListener('fetch', (e) => {
             .catch(() => caches.match(e.request))
     );
 });
+
