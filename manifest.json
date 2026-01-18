@@ -1,7 +1,7 @@
 {
     "name": "TruthWatch",
     "short_name": "TruthWatch",
-    "start_url": "screenr_god.html",
+    "start_url": "index.html",
     "display": "standalone",
     "background_color": "#0b1118",
     "theme_color": "#0b1118",
@@ -18,4 +18,5 @@
             "type": "image/png"
         }
     ]
+
 }
