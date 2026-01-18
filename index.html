@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRUTHWATCH | Supabase Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .tag-SIGNAL {
@@ -30,22 +35,38 @@
         }
 
         ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            /* gray-200 */
+        }
+
+        .dark ::-webkit-scrollbar-track {
             background: #161d27;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #232d3d;
+            background: #9ca3af;
+            /* gray-400 */
             border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #232d3d;
         }
     </style>
 </head>
 
-<body class="bg-[#0b1118] text-[#e0e6ed] h-screen flex flex-col overflow-hidden font-sans">
+<body
+    class="bg-gray-100 dark:bg-[#0b1118] text-gray-900 dark:text-[#e0e6ed] h-[100dvh] flex flex-col overflow-hidden font-sans transition-colors duration-200">
 
     <!-- Mobile Header -->
-    <header class="md:hidden bg-[#161d27] border-b border-[#232d3d] p-4 flex justify-between items-center z-20">
-        <div class="font-bold text-blue-400">TruthWatch</div>
-        <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">
+    <header
+        class="md:hidden bg-white dark:bg-[#161d27] border-b border-gray-200 dark:border-[#232d3d] p-4 flex justify-between items-center z-20 transition-colors duration-200">
+        <div class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            TruthWatch
+            <button onclick="toggleTheme()" class="ml-4 text-xl">🌓</button>
+        </div>
+        <button onclick="toggleMobileMenu()"
+            class="text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
                 </path>
@@ -56,9 +77,13 @@
     <div class="flex flex-grow overflow-hidden relative">
         <!-- Sidebar -->
         <aside id="sidebar"
-            class="fixed inset-y-0 left-0 md:relative w-80 h-full border-r border-[#232d3d] flex flex-col bg-[#0f151e] transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 pt-0 md:pt-0 shadow-2xl md:shadow-none">
-            <div class="p-6 border-b border-[#232d3d] hidden md:block">
-                <h1 class="text-2xl font-bold tracking-wider text-blue-400">TruthWatch</h1>
+            class="fixed inset-y-0 left-0 md:relative w-80 h-full border-r border-gray-200 dark:border-[#232d3d] flex flex-col bg-white dark:bg-[#0f151e] transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 pt-0 md:pt-0 shadow-2xl md:shadow-none transition-colors duration-200">
+            <div class="p-6 border-b border-gray-200 dark:border-[#232d3d] hidden md:block">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold tracking-wider text-blue-600 dark:text-blue-400">TruthWatch</h1>
+                    <button onclick="toggleTheme()"
+                        class="text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition">🌓</button>
+                </div>
                 <div class="text-xs text-gray-500 mt-1">Powered by Supabase</div>
                 <button onclick="openLeaderboard()"
                     class="w-full mt-6 bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold transition">🏆
@@ -84,21 +109,25 @@
         </div>
 
         <!-- Main Content -->
-        <main class="flex-grow flex flex-col relative w-full">
-            <header class="p-4 bg-[#161d27] border-b border-[#232d3d] flex justify-between items-center shadow-md z-10">
+        <main
+            class="flex-grow flex flex-col relative w-full bg-gray-50 dark:bg-[#0b1118] transition-colors duration-200">
+            <header
+                class="p-4 bg-white dark:bg-[#161d27] border-b border-gray-200 dark:border-[#232d3d] flex justify-between items-center shadow-md z-10 transition-colors duration-200">
                 <div>
-                    <h2 id="active-title" class="text-xl font-semibold truncate max-w-[200px]">Select Provider</h2>
-                    <div id="active-score" class="text-sm text-gray-400"></div>
+                    <h2 id="active-title"
+                        class="text-xl font-semibold truncate max-w-[200px] text-gray-900 dark:text-white">Select
+                        Provider</h2>
+                    <div id="active-score" class="text-sm text-gray-500"></div>
                 </div>
                 <div id="header-btns" class="hidden flex space-x-2">
                     <button onclick="openStats()"
-                        class="bg-[#232d3d] hover:bg-[#2f3b4f] px-3 py-2 rounded border border-[#3e4d5e] transition text-sm">📊</button>
+                        class="bg-gray-100 hover:bg-gray-200 dark:bg-[#232d3d] dark:hover:bg-[#2f3b4f] px-3 py-2 rounded border border-gray-300 dark:border-[#3e4d5e] transition text-sm text-gray-700 dark:text-gray-300">📊</button>
                     <button onclick="openPerf()"
-                        class="bg-[#232d3d] hover:bg-[#2f3b4f] px-3 py-2 rounded border border-[#3e4d5e] transition text-sm">📈</button>
+                        class="bg-gray-100 hover:bg-gray-200 dark:bg-[#232d3d] dark:hover:bg-[#2f3b4f] px-3 py-2 rounded border border-gray-300 dark:border-[#3e4d5e] transition text-sm text-gray-700 dark:text-gray-300">📈</button>
                 </div>
             </header>
 
-            <div id="feed" class="flex-grow p-4 md:p-6 overflow-y-auto flex flex-col space-y-4">
+            <div id="feed" class="flex-grow p-4 md:p-6 pb-24 overflow-y-auto flex flex-col space-y-4">
                 <div class="text-center text-gray-600 mt-20">Select a channel to view auditable signals.</div>
             </div>
         </main>
@@ -106,12 +135,14 @@
 
     <!-- Modals -->
     <div id="modal-bg"
-        class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+        class="fixed inset-0 bg-black/50 dark:bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm"
         onclick="closeModal(event)">
-        <div class="bg-[#161d27] w-full max-w-3xl rounded-xl border border-blue-500/30 shadow-2xl flex flex-col max-h-[85vh]"
+        <div class="bg-white dark:bg-[#161d27] w-full max-w-3xl rounded-xl border border-gray-200 dark:border-blue-500/30 shadow-2xl flex flex-col max-h-[85vh] transition-colors duration-200"
             onclick="event.stopPropagation()">
-            <div class="p-6 border-b border-[#232d3d] flex justify-between items-center bg-[#1c2531] rounded-t-xl">
-                <h2 id="modal-title" class="text-xl md:text-2xl font-bold truncate">Details</h2>
+            <div
+                class="p-6 border-b border-gray-200 dark:border-[#232d3d] flex justify-between items-center bg-gray-50 dark:bg-[#1c2531] rounded-t-xl transition-colors duration-200">
+                <h2 id="modal-title" class="text-xl md:text-2xl font-bold truncate text-gray-900 dark:text-white">
+                    Details</h2>
                 <button onclick="closeModal()"
                     class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
@@ -130,6 +161,23 @@
         let allData = [];
         let providerStats = {};
         let currentChannel = "";
+
+        // Toggle Theme
+        window.toggleTheme = () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Init Theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        }
 
         // Mobile Toggle
         window.toggleMobileMenu = () => {
@@ -225,7 +273,7 @@
                 const isActive = channel === currentChannel;
 
                 const div = document.createElement('div');
-                div.className = `p-3 rounded mx-2 cursor-pointer flex justify-between items-center transition ${isActive ? 'bg-[#232d3d] border-l-4 border-blue-500' : 'hover:bg-[#1c2531] border-l-4 border-transparent'}`;
+                div.className = `p-3 rounded mx-2 cursor-pointer flex justify-between items-center transition ${isActive ? 'bg-gray-200 dark:bg-[#232d3d] border-l-4 border-blue-500 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-100 dark:hover:bg-[#1c2531] border-l-4 border-transparent text-gray-600 dark:text-gray-400'}`;
                 div.onclick = () => {
                     selectChannel(channel);
                     if (window.innerWidth < 768) toggleMobileMenu(); // Auto-close on mobile
@@ -259,17 +307,17 @@
 
                 let details = '';
                 if (m.is_signal && m.entry) {
-                    details = `<div class="mt-2 text-xs text-blue-300 font-mono bg-black/20 p-2 rounded inline-block w-full overflow-x-auto">
+                    details = `<div class="mt-2 text-xs text-blue-600 dark:text-blue-300 font-mono bg-gray-100 dark:bg-black/20 p-2 rounded inline-block w-full overflow-x-auto">
                     ${m.action} @ ${m.entry} | TP: ${m.tp || '--'} | SL: ${m.sl || '--'} | Mkt: ${m.market_at_time || '--'}
                 </div>`;
                 }
 
-                return `<div class="bg-[#161d27] p-4 rounded-lg border border-[#232d3d] self-start w-full max-w-3xl hover:border-blue-500/30 transition shadow-sm">
+                return `<div class="bg-white dark:bg-[#161d27] p-4 rounded-lg border border-gray-200 dark:border-[#232d3d] self-start w-full max-w-3xl hover:border-blue-500/30 transition shadow-sm">
                 <div class="text-[11px] text-gray-500 mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>${time}</div>
                     <div class="flex flex-wrap gap-1">${tagsHtml}</div>
                 </div>
-                <div class="whitespace-pre-wrap text-sm leading-relaxed break-words">${m.text || "[Content Deleted]"}</div>
+                <div class="whitespace-pre-wrap text-sm leading-relaxed break-words text-gray-700 dark:text-gray-300">${m.text || "[Content Deleted]"}</div>
                 ${details}
             </div>`;
             }).join('');
@@ -285,6 +333,7 @@
 
         window.openLeaderboard = () => {
             const sorted = Object.entries(providerStats)
+                .filter(([, s]) => s.active !== false)
                 .sort(([, a], [, b]) => b.score - a.score);
 
             document.getElementById('modal-title').innerText = "Global Leaderboard";
@@ -292,7 +341,7 @@
             <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[300px]">
                 <thead>
-                    <tr class="text-gray-500 border-b border-[#232d3d]">
+                    <tr class="text-gray-500 border-b border-gray-200 dark:border-[#232d3d]">
                         <th class="p-3">Rank</th>
                         <th class="p-3">Provider</th>
                         <th class="p-3">Score</th>
@@ -302,9 +351,9 @@
                 </thead>
                 <tbody>
                     ${sorted.map(([name, s], i) => `
-                        <tr class="border-b border-[#232d3d] hover:bg-[#1c2531]">
+                        <tr class="border-b border-gray-100 dark:border-[#232d3d] hover:bg-gray-50 dark:hover:bg-[#1c2531] transition-colors">
                             <td class="p-3 font-mono text-gray-500">#${i + 1}</td>
-                            <td class="p-3 font-bold text-blue-400 whitespace-nowrap">${name}</td>
+                            <td class="p-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">${name}</td>
                             <td class="p-3 font-bold ${s.score >= 80 ? 'text-green-500' : 'text-red-500'}">${s.score}</td>
                             <td class="p-3 text-orange-400 text-center">${s.edits}</td>
                             <td class="p-3 text-red-500 text-center">${s.deletes}</td>
@@ -326,23 +375,23 @@
             document.getElementById('modal-title').innerText = `${currentChannel} Stats`;
             document.getElementById('modal-content').innerHTML = `
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
-                    <div class="text-2xl md:text-3xl font-bold text-white">${sigs}</div>
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">${sigs}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Signals</div>
                 </div>
-                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold ${stats.score >= 80 ? 'text-green-500' : 'text-red-500'}">${stats.score}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Score</div>
                 </div>
-                 <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-yellow-500">${stats.win_rate != null ? stats.win_rate + '%' : 'N/A'}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Win Rate</div>
                 </div>
-                 <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-orange-400">${stats.edits}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Edits</div>
                 </div>
-                <div class="bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-[#232d3d]">
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-red-500">${stats.deletes}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Deletes</div>
                 </div>
@@ -362,21 +411,21 @@
                 const isLoss = s.outcome === 'LOSS';
                 const isBuy = s.action === 'BUY';
                 const borderClass = isWin ? 'border-green-500' : isLoss ? 'border-red-500' : 'border-blue-500';
-                const outcomeClass = isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-blue-400';
-                const typeClass = isBuy ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10';
+                const outcomeClass = isWin ? 'text-green-500' : isLoss ? 'text-red-500' : 'text-blue-500';
+                const typeClass = isBuy ? 'text-green-600 dark:text-green-400 bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-500/10';
 
                 return `
-                    <div class="bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg">
+                    <div class="bg-white dark:bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg transition-colors border max-w-full">
                         <div class="mb-2 md:mb-0 w-full">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="px-3 py-1 rounded font-bold text-xs md:text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
                                 <span class="text-xs text-gray-500">${new Date(s.timestamp * 1000).toLocaleString('en-GB')}</span>
                             </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm md:text-xs font-mono text-gray-400 bg-[#161d27] p-2 rounded">
-                                <div><span class="text-gray-600 block text-[10px] uppercase">Entry</span>${s.entry}</div>
-                                <div><span class="text-gray-600 block text-[10px] uppercase">TP</span>${s.tp || '--'}</div>
-                                <div><span class="text-gray-600 block text-[10px] uppercase">SL</span>${s.sl || '--'}</div>
-                                <div><span class="text-gray-600 block text-[10px] uppercase">Mkt Price</span>${s.market_at_time || '--'}</div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm md:text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-[#161d27] p-2 rounded">
+                                <div><span class="text-gray-500 dark:text-gray-600 block text-[10px] uppercase">Entry</span>${s.entry}</div>
+                                <div><span class="text-gray-500 dark:text-gray-600 block text-[10px] uppercase">TP</span>${s.tp || '--'}</div>
+                                <div><span class="text-gray-500 dark:text-gray-600 block text-[10px] uppercase">SL</span>${s.sl || '--'}</div>
+                                <div><span class="text-gray-500 dark:text-gray-600 block text-[10px] uppercase">Mkt Price</span>${s.market_at_time || '--'}</div>
                             </div>
                         </div>
                         <div class="text-right md:ml-6 min-w-[100px] mt-3 md:mt-0 border-t md:border-t-0 border-[#232d3d] pt-3 md:pt-0 flex flex-col items-end">
