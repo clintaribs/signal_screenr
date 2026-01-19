@@ -77,7 +77,10 @@
         class="md:hidden bg-white dark:bg-[#161d27] border-b border-gray-200 dark:border-[#232d3d] p-4 flex justify-between items-center z-20 transition-colors duration-200">
         <div class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
             TruthWatch
-            <button onclick="toggleTheme()" class="ml-4 text-xl">🌓</button>
+            <button onclick="location.reload()"
+                class="ml-4 text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition">🔄</button>
+            <button onclick="toggleTheme()"
+                class="ml-2 text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition">🌓</button>
         </div>
         <button onclick="toggleMobileMenu()"
             class="text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white">
@@ -95,8 +98,13 @@
             <div class="p-6 border-b border-gray-200 dark:border-[#232d3d] hidden md:block">
                 <div class="flex justify-between items-center">
                     <h1 class="text-2xl font-bold tracking-wider text-blue-600 dark:text-blue-400">TruthWatch</h1>
-                    <button onclick="toggleTheme()"
-                        class="text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition">🌓</button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="location.reload()"
+                            class="text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition"
+                            title="Refresh App">🔄</button>
+                        <button onclick="toggleTheme()"
+                            class="text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition">🌓</button>
+                    </div>
                 </div>
                 <div class="text-xs text-gray-500 mt-1">Powered by Supabase</div>
                 <button onclick="openLeaderboard()"
@@ -285,8 +293,14 @@
             const sortedChannels = allChannelNames
                 .filter(ch => {
                     const s = providerStats[ch];
-                    // Show if active is true OR undefined (default). Hide only if explicitly false.
-                    return s?.active !== false;
+                    // STRICT filtering: 
+                    // 1. Must exist in providerStats (implies it was discovered/synced)
+                    // 2. active must be true
+                    // Fallback: If no stats exist yet (rare race condition), we hide it to be safe, 
+                    // or show it if it has recent messages? 
+                    // BETTER: Trust the backend sync. If backend says active=false (or missing), hide it.
+                    if (!s) return false;
+                    return s.active === true;
                 })
                 .sort((a, b) => {
                     const scoreA = providerStats[a]?.score || 0;
@@ -403,12 +417,12 @@
         };
 
         window.openStats = () => {
-            const stats = providerStats[currentChannel] || { score: 100, edits: 0, deletes: 0 };
+            const stats = providerStats[currentChannel] || { score: 100, edits: 0, deletes: 0, tp_signals: 0 };
             const sigs = allData.filter(m => m.channel_name === currentChannel && m.is_signal).length;
 
             document.getElementById('modal-title').innerText = `${currentChannel} Stats`;
             document.getElementById('modal-content').innerHTML = `
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">${sigs}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Signals</div>
@@ -420,6 +434,10 @@
                  <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-yellow-500">${stats.win_rate != null ? stats.win_rate + '%' : 'N/A'}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Win Rate</div>
+                </div>
+                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-purple-500">${stats.tp_signals || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">TP Signals</div>
                 </div>
                  <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-orange-400">${stats.edits}</div>
