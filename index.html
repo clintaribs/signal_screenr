@@ -218,12 +218,21 @@
                         allData.push(payload.new);
                     } else if (payload.eventType === 'UPDATE') {
                         const idx = allData.findIndex(d => d.msg_id === payload.new.msg_id);
-                        if (idx !== -1) allData[idx] = payload.new;
+                        if (idx > -1) allData[idx] = payload.new;
                     } else if (payload.eventType === 'DELETE') {
                         // Note: Payload.old only has ID usually
                         allData = allData.filter(d => d.msg_id !== payload.old.msg_id);
                     }
-                    if (currentChannel) renderFeed();
+
+                    if (currentChannel) {
+                        renderFeed();
+                        // If Performance Modal is Open, Refresh it
+                        const modalTitle = document.getElementById('modal-title');
+                        const modalBg = document.getElementById('modal-bg');
+                        if (!modalBg.classList.contains('hidden') && modalTitle.innerText === "Trade Performance") {
+                            openPerf();
+                        }
+                    }
                     renderChannels();
                 })
                 .subscribe();
@@ -242,6 +251,9 @@
 
         window.selectChannel = (name) => {
             currentChannel = name;
+            // Mark as Read
+            localStorage.setItem('lastRead_' + name, Date.now() / 1000);
+
             document.getElementById('active-title').innerText = name;
             document.getElementById('header-btns').classList.remove('hidden');
             updateHeaderStats();
@@ -293,9 +305,17 @@
                     if (window.innerWidth < 768) toggleMobileMenu(); // Auto-close on mobile
                 };
 
+                const lastRead = parseFloat(localStorage.getItem('lastRead_' + channel) || '0');
+                const channelMsgs = allData.filter(m => m.channel_name === channel);
+                const lastMsgTime = channelMsgs.length > 0 ? Math.max(...channelMsgs.map(m => m.timestamp)) : 0;
+                const hasUnread = lastMsgTime > lastRead;
+
                 div.innerHTML = `
-                    <span class="font-medium truncate max-w-[160px]">${channel}</span>
-                    <span class="text-xs font-bold ${stats.score < 80 ? 'text-red-500' : 'text-green-500'} bg-black/30 px-2 py-1 rounded">${stats.score}</span>
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        ${hasUnread ? '<div class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 animate-pulse"></div>' : ''}
+                        <span class="font-medium truncate max-w-[140px]">${channel}</span>
+                    </div>
+                    <span class="text-xs font-bold ${stats.score < 80 ? 'text-red-500' : 'text-green-500'} bg-black/5 dark:bg-black/30 px-2 py-1 rounded flex-shrink-0">${stats.score}</span>
                 `;
                 list.appendChild(div);
             });
