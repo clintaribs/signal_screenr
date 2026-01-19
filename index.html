@@ -474,7 +474,8 @@
             }).join('')}
             </div>`;
             document.getElementById('modal-bg').classList.remove('hidden');
-        }
+        };
+
         async function refreshSignal(msgId) {
             const btn = event.currentTarget;
             btn.classList.add('animate-spin');
@@ -498,6 +499,45 @@
                 alert("Error sending refresh request: " + e.message);
                 btn.classList.remove('animate-spin');
             }
+        }
+    </script>
+    <script>
+        // Pull to Refresh (Targeting #feed container)
+        // Re-added correctly outside main block
+        let touchStart = 0;
+        let touchPull = 0;
+        const feed = document.getElementById('feed'); // This element exists in DOM
+        // Visual indicator
+        const refreshIndicator = document.createElement('div');
+        refreshIndicator.className = "fixed top-0 left-0 w-full h-1 bg-blue-500 transform scale-x-0 transition-transform origin-left z-50";
+        document.body.appendChild(refreshIndicator);
+
+        if (feed) {
+            feed.addEventListener('touchstart', e => {
+                if (feed.scrollTop <= 0) touchStart = e.touches[0].clientY;
+            }, { passive: true });
+
+            feed.addEventListener('touchmove', e => {
+                if (touchStart === 0) return;
+                const touchY = e.touches[0].clientY;
+                touchPull = touchY - touchStart;
+
+                if (feed.scrollTop <= 0 && touchPull > 0) {
+                    const percent = Math.min(touchPull / 200, 1);
+                    refreshIndicator.style.transform = `scaleX(${percent})`;
+                }
+            }, { passive: true });
+
+            feed.addEventListener('touchend', () => {
+                if (feed.scrollTop <= 0 && touchPull > 150) {
+                    refreshIndicator.style.transform = `scaleX(1)`;
+                    setTimeout(() => location.reload(), 200);
+                } else {
+                    refreshIndicator.style.transform = `scaleX(0)`;
+                }
+                touchStart = 0;
+                touchPull = 0;
+            });
         }
     </script>
 </body>
