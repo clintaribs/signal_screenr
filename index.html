@@ -254,9 +254,14 @@
             overlay.classList.toggle('hidden');
         }
 
-        // Fetch Initial Data
+        // Fetch Initial Data (Get last 2000 messages to ensure recent ones shown)
         async function init() {
-            const { data: msgs } = await dbClient.from('archived_messages').select('*');
+            const { data: msgs } = await dbClient
+                .from('archived_messages')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(2000);
+
             if (msgs) allData = msgs;
 
             const { data: stats } = await dbClient.from('provider_stats').select('*');
@@ -312,10 +317,16 @@
         }
         init();
 
-        window.selectChannel = (name) => {
+        window.selectChannel = async (name) => {
             currentChannel = name;
             // Mark as Read
             localStorage.setItem('lastRead_' + name, Date.now() / 1000);
+
+            document.getElementById('active-title').innerText = name + " (Loading...)";
+
+            // FETCH FULL HISTORY for this channel 
+            // (Frontend init only gets 2000 global, we need ALL for accurate stats/feed)
+            await fetchChannelHistory(name);
 
             document.getElementById('active-title').innerText = name;
             document.getElementById('header-btns').classList.remove('hidden');
@@ -328,6 +339,22 @@
                 toggleMobileMenu();
             }
         };
+
+        async function fetchChannelHistory(name) {
+            const { data, error } = await dbClient
+                .from('archived_messages')
+                .select('*')
+                .eq('channel_name', name)
+                .order('timestamp', { ascending: true }); // Oldest first for feed sort? Or just sort in RAM.
+
+            if (data) {
+                // Merge into allData (avoid duplicates)
+                // We use a Map or just filter out existing?
+                // Easier: Remove existing for this channel and replace with full fetch
+                allData = allData.filter(d => d.channel_name !== name);
+                allData = [...allData, ...data];
+            }
+        }
 
         function updateHeaderStats() {
             const stats = providerStats[currentChannel];
@@ -423,7 +450,7 @@
                 <div class="whitespace-pre-wrap text-sm leading-relaxed break-words text-gray-700 dark:text-gray-300">${m.text || "[Content Deleted]"}</div>
                 ${details}
             </div>`;
-            }).join('') + '<div class="h-32 w-full flex-shrink-0"></div>'; // Add explicit spacer at bottom
+            }).join('') + '<div class="h-0 w-full flex-shrink-0"></div>'; // Add explicit spacer at bottom
             feed.scrollTop = feed.scrollHeight;
         }
 
@@ -533,6 +560,21 @@
                 const outcomeClass = isWin ? 'text-green-500' : isLoss ? 'text-red-500' : 'text-blue-500';
                 const typeClass = isBuy ? 'text-green-600 dark:text-green-400 bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-500/10';
 
+                // Display Logic
+                const runPips = (s.max_run_pips || 0).toFixed(2);
+                let lossPips = "0.00";
+
+                // Calculate Loss Pips if LOSS
+                if (isLoss && s.sl && s.entry) {
+                    // Gold: $1 = 10 pips. 0.10 = 1 pip.
+                    // Diff * 10 = Pips.
+                    const diff = Math.abs(s.entry - s.sl);
+                    // Asset specific multiplier (Assume Gold/Default is 10x for price-to-pips)
+                    // If J75 (Indices), it might be 1:1. 
+                    const multiplier = (s.asset === 'J75') ? 1 : 10;
+                    lossPips = (diff * multiplier).toFixed(2);
+                }
+
                 return `
                     <div class="bg-white dark:bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg transition-colors border max-w-full">
                         <div class="mb-2 md:mb-0 w-full">
@@ -549,15 +591,18 @@
                         </div>
                         <div class="text-right md:ml-6 min-w-[100px] mt-3 md:mt-0 border-t md:border-t-0 border-[#232d3d] pt-3 md:pt-0 flex flex-col items-end">
                              <div class="text-xl md:text-2xl font-bold ${outcomeClass}">${s.outcome}</div>
-                            <div class="text-xs text-gray-500">Run: <span class="${s.max_run_pips > 0 ? 'text-green-400' : 'text-gray-400'}">${s.max_run_pips} pips</span></div>
+                            <div class="text-xs text-gray-500">Peak: <span class="${runPips > 0 ? 'text-green-400' : 'text-gray-400'}">+${runPips} pips</span></div>
+                            ${isLoss ? `<div class="text-xs text-red-500 mt-0.5">Loss: -${lossPips} pips</div>` : ''}
+                            
                             ${s.outcome === 'LIVE' ? `
                             <button onclick="refreshSignal(${s.msg_id})" class="mt-2 text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded border border-blue-600/50 transition flex items-center gap-1" title="Ping MT5 Update">
                                 🔄 Update
                             </button>` : ''}
                         </div>
                     </div>`;
-            }).join('')}
-            </div>`;
+            }).join('')
+                }
+            </div > `;
             document.getElementById('modal-bg').classList.remove('hidden');
         };
 
@@ -569,7 +614,7 @@
 
             document.getElementById('modal-title').innerText = "Equity Curve Calculator";
             document.getElementById('modal-content').innerHTML = `
-                <div class="space-y-6">
+                < div class="space-y-6" >
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
@@ -604,8 +649,8 @@
                         </div>
                     </div>
                     <div class="text-[10px] text-gray-400 text-center italic">Model assumes fixed risk & R:R on realized WINS/LOSSES.</div>
-                </div>
-            `;
+                </div >
+                `;
             document.getElementById('modal-bg').classList.remove('hidden');
             // Wait for modal to render
             setTimeout(calcEquity, 50);
@@ -644,13 +689,13 @@
                 if (dd > maxDD) maxDD = dd;
 
                 dataPoints.push(balance);
-                labels.push(`#${i + 1}`);
+                labels.push(`#${i + 1} `);
             });
 
             document.getElementById('eq-total').innerText = sigs.length;
             document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
             document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
+            document.getElementById('eq-final').className = `text - xl font - bold font - mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
 
             const ctx = document.getElementById('equityChart').getContext('2d');
             if (equityChartInstance) equityChartInstance.destroy();
