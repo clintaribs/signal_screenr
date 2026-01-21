@@ -23,6 +23,7 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- PWA Setup -->
     <link rel="manifest" href="manifest.json">
@@ -188,6 +189,8 @@
                         class="bg-gray-100 hover:bg-gray-200 dark:bg-[#232d3d] dark:hover:bg-[#2f3b4f] px-3 py-2 rounded border border-gray-300 dark:border-[#3e4d5e] transition text-sm text-gray-700 dark:text-gray-300">📊</button>
                     <button onclick="openPerf()"
                         class="bg-gray-100 hover:bg-gray-200 dark:bg-[#232d3d] dark:hover:bg-[#2f3b4f] px-3 py-2 rounded border border-gray-300 dark:border-[#3e4d5e] transition text-sm text-gray-700 dark:text-gray-300">📈</button>
+                    <button onclick="openEquity()"
+                        class="bg-gray-100 hover:bg-gray-200 dark:bg-[#232d3d] dark:hover:bg-[#2f3b4f] px-3 py-2 rounded border border-gray-300 dark:border-[#3e4d5e] transition text-sm text-gray-700 dark:text-gray-300">💰</button>
                 </div>
             </header>
 
@@ -556,6 +559,153 @@
             }).join('')}
             </div>`;
             document.getElementById('modal-bg').classList.remove('hidden');
+        };
+
+        let equityChartInstance = null;
+        window.openEquity = () => {
+            document.getElementById('modal-title').innerText = "Equity Curve Calculator";
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
+                            <input type="number" id="eq-balance" value="10000" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Risk per Trade (%)</label>
+                            <input type="number" id="eq-risk" value="1" step="0.1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Reward Ratio (R:R)</label>
+                            <input type="number" id="eq-rr" value="2" step="0.5" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-[#0b1118] p-4 rounded-lg border border-gray-200 dark:border-[#232d3d] shadow-sm relative h-64">
+                        <canvas id="equityChart"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-xs text-gray-500 mb-1">Total Trades</div>
+                            <div id="eq-total" class="text-xl font-bold text-gray-900 dark:text-white font-mono">0</div>
+                        </div>
+                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-xs text-gray-500 mb-1">Max Drawdown</div>
+                            <div id="eq-dd" class="text-xl font-bold text-red-500 font-mono">0%</div>
+                        </div>
+                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-xs text-gray-500 mb-1">Final Balance</div>
+                            <div id="eq-final" class="text-xl font-bold text-green-500 font-mono">$0</div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-gray-400 text-center italic">Model assumes fixed risk & R:R on realized WINS/LOSSES.</div>
+                </div>
+            `;
+            document.getElementById('modal-bg').classList.remove('hidden');
+            // Wait for modal to render
+            setTimeout(calcEquity, 50);
+        };
+
+        window.calcEquity = () => {
+            const balanceStart = parseFloat(document.getElementById('eq-balance').value) || 10000;
+            const riskPct = parseFloat(document.getElementById('eq-risk').value) || 1;
+            const rr = parseFloat(document.getElementById('eq-rr').value) || 2;
+
+            const sigs = allData
+                .filter(m => m.channel_name === currentChannel && m.is_signal && (m.outcome === 'WIN' || m.outcome === 'LOSS'))
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            let balance = balanceStart;
+            let maxBalance = balanceStart;
+            let maxDD = 0;
+            const dataPoints = [balanceStart];
+            const labels = ['Start'];
+
+            sigs.forEach((s, i) => {
+                const riskAmount = balance * (riskPct / 100);
+                if (s.outcome === 'WIN') {
+                    const profit = riskAmount * rr;
+                    balance += profit;
+                } else {
+                    balance -= riskAmount;
+                }
+
+                if (balance > maxBalance) maxBalance = balance;
+                const dd = ((maxBalance - balance) / maxBalance) * 100;
+                if (dd > maxDD) maxDD = dd;
+
+                dataPoints.push(balance);
+                labels.push(`#${i + 1}`);
+            });
+
+            document.getElementById('eq-total').innerText = sigs.length;
+            document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
+            document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
+
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            if (equityChartInstance) equityChartInstance.destroy();
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const color = balance >= balanceStart ? '#10b981' : '#ef4444';
+            const gridColor = isDark ? '#232d3d' : '#e5e7eb';
+            const tickColor = isDark ? '#9ca3af' : '#4b5563';
+
+            equityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Equity',
+                        data: dataPoints,
+                        borderColor: color,
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient.addColorStop(0, color + '20'); // Low opacity fill
+                            gradient.addColorStop(1, color + '00');
+                            return gradient;
+                        },
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                            },
+                            backgroundColor: isDark ? '#161d27' : '#ffffff',
+                            titleColor: isDark ? '#fff' : '#000',
+                            bodyColor: isDark ? '#ccc' : '#4b5563',
+                            borderColor: isDark ? '#232d3d' : '#e5e7eb',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                callback: (val) => '$' + val.toLocaleString()
+                            },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
         };
 
         async function refreshSignal(msgId) {
