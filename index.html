@@ -439,7 +439,6 @@
             document.getElementById('modal-title').innerText = "Global Leaderboard";
             document.getElementById('modal-content').innerHTML = `
             <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                     <tr class="text-gray-500 border-b border-gray-200 dark:border-[#232d3d] text-xs uppercase tracking-wider">
                         <th class="p-3">Rank</th>
@@ -451,6 +450,8 @@
                         <th class="p-3 text-center">Net Pips</th>
                         <th class="p-3 text-center">Trades</th>
                         <th class="p-3 text-center">TP Sigs</th>
+                        <th class="p-3 text-center">Edits</th>
+                        <th class="p-3 text-center">Deletes</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm">
@@ -465,6 +466,8 @@
                             <td class="p-3 text-center font-bold ${s.net_profit >= 0 ? 'text-green-500' : 'text-red-500'}">${s.net_profit != null ? (s.net_profit > 0 ? '+' : '') + s.net_profit : '--'}</td>
                             <td class="p-3 text-center text-gray-700 dark:text-gray-300">${s.total || 0}</td>
                             <td class="p-3 text-center text-purple-500 font-bold">${s.tp_signals || 0}</td>
+                            <td class="p-3 text-center text-orange-400 font-bold">${s.edits || 0}</td>
+                            <td class="p-3 text-center text-red-500 font-bold">${s.deletes || 0}</td>
                         </tr>
                     `).join('')}
                 </tbody>
