@@ -434,6 +434,8 @@
                 if (m.status === 'EDITED') tagsHtml += `<span class="tag-EDITED text-[10px] px-2 py-0.5 rounded font-bold mr-2">EDITED</span>`;
                 if (m.status === 'DELETED') tagsHtml += `<span class="tag-DELETED text-[10px] px-2 py-0.5 rounded font-bold mr-2 text-white">DELETED</span>`;
                 if (m.tags && m.tags.includes('TP_SIGNAL')) tagsHtml += `<span class="tag-TP_SIGNAL text-[10px] px-2 py-0.5 rounded font-bold text-white mr-2">TP_SIGNAL</span>`;
+                if (m.tags && m.tags.includes('EVIL')) tagsHtml += `<span class="bg-red-700 text-[10px] px-2 py-0.5 rounded font-bold text-white mr-2 shadow-sm uppercase tracking-wide">EVIL</span>`;
+                if (m.tags && m.tags.includes('ERROR')) tagsHtml += `<span class="bg-gray-700 text-[10px] px-2 py-0.5 rounded font-mono text-white mr-2 border border-gray-500">ERROR</span>`;
 
                 let details = '';
                 if (m.is_signal && m.entry) {
