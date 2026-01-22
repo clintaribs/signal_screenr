@@ -481,6 +481,8 @@
                         <th class="p-3 text-center">Net Pips</th>
                         <th class="p-3 text-center">Trades</th>
                         <th class="p-3 text-center">TP Sigs</th>
+                        <th class="p-3 text-center">Evil</th>
+                        <th class="p-3 text-center">Errors</th>
                         <th class="p-3 text-center">Edits</th>
                         <th class="p-3 text-center">Deletes</th>
                     </tr>
@@ -497,6 +499,8 @@
                             <td class="p-3 text-center font-bold ${s.net_profit >= 0 ? 'text-green-500' : 'text-red-500'}">${s.net_profit != null ? (s.net_profit > 0 ? '+' : '') + s.net_profit : '--'}</td>
                             <td class="p-3 text-center text-gray-700 dark:text-gray-300">${s.total || 0}</td>
                             <td class="p-3 text-center text-purple-500 font-bold">${s.tp_signals || 0}</td>
+                            <td class="p-3 text-center text-red-600 font-extrabold">${s.evil_signals || 0}</td>
+                            <td class="p-3 text-center text-gray-500 font-bold">${s.errors || 0}</td>
                             <td class="p-3 text-center text-orange-400 font-bold">${s.edits || 0}</td>
                             <td class="p-3 text-center text-red-500 font-bold">${s.deletes || 0}</td>
                         </tr>
@@ -533,6 +537,22 @@
                     <div class="text-2xl md:text-3xl font-bold text-purple-500">${stats.tp_signals || 0}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">TP Signals</div>
                 </div>
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-green-500">${stats.wins || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Wins</div>
+                </div>
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-red-500">${stats.losses || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Losses</div>
+                </div>
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-red-600">${stats.evil_signals || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">EVIL</div>
+                </div>
+                <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-gray-500">${stats.errors || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Errors</div>
+                </div>
                  <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-orange-400">${stats.edits}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Edits</div>
@@ -561,14 +581,16 @@
                 const typeClass = isBuy ? 'text-green-600 dark:text-green-400 bg-green-500/10' : 'text-red-600 dark:text-red-400 bg-red-500/10';
 
                 // Display Logic
+                // USER FIX: Use market_at_time (Real Price) if available, else s.entry
+                const realEntry = parseFloat(s.market_at_time || s.entry);
                 const runPips = (s.max_run_pips || 0).toFixed(2);
                 let lossPips = "0.00";
 
                 // Calculate Loss Pips if LOSS
-                if (isLoss && s.sl && s.entry) {
+                if (isLoss && s.sl && realEntry) {
                     // Gold: $1 = 10 pips. 0.10 = 1 pip.
                     // Diff * 10 = Pips.
-                    const diff = Math.abs(s.entry - s.sl);
+                    const diff = Math.abs(realEntry - s.sl);
                     // Asset specific multiplier (Assume Gold/Default is 10x for price-to-pips)
                     // If J75 (Indices), it might be 1:1. 
                     const multiplier = (s.asset === 'J75') ? 1 : 10;
