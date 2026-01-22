@@ -614,7 +614,7 @@
 
             document.getElementById('modal-title').innerText = "Equity Curve Calculator";
             document.getElementById('modal-content').innerHTML = `
-                < div class="space-y-6" >
+                <div class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
@@ -649,7 +649,7 @@
                         </div>
                     </div>
                     <div class="text-[10px] text-gray-400 text-center italic">Model assumes fixed risk & R:R on realized WINS/LOSSES.</div>
-                </div >
+                </div>
                 `;
             document.getElementById('modal-bg').classList.remove('hidden');
             // Wait for modal to render
@@ -695,7 +695,7 @@
             document.getElementById('eq-total').innerText = sigs.length;
             document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
             document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('eq-final').className = `text - xl font - bold font - mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
+            document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
 
             const ctx = document.getElementById('equityChart').getContext('2d');
             if (equityChartInstance) equityChartInstance.destroy();
