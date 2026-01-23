@@ -359,8 +359,34 @@
         function updateHeaderStats() {
             const stats = providerStats[currentChannel];
             const score = stats ? stats.score : 100;
-            document.getElementById('active-score').innerHTML = `Truth Score: <span class="${score < 80 ? 'text-red-500' : 'text-green-400'} font-bold">${score}</span>`;
+            const scoreColor = score < 80 ? 'text-red-500' : 'text-green-400';
+
+            document.getElementById('active-score').innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <span>Truth Score: <span class="${scoreColor} font-bold">${score}</span></span>
+                    <button onclick="requestSync()" class="p-1 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded shadow transition flex items-center gap-1" title="Force Sync & Recalculate Stats">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Sync
+                    </button>
+                </div>
+            `;
         }
+
+        window.requestSync = async () => {
+            if (!currentChannel) return;
+            const btn = document.querySelector("#active-score button");
+            if (btn) btn.innerHTML = '...';
+
+            // Set force_sync = true in DB
+            await dbClient.from('provider_stats').update({ force_sync: true }).eq('channel_name', currentChannel);
+
+            // Wait a bit to prevent spam
+            setTimeout(() => {
+                if (btn) btn.innerHTML = `
+                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                 Sync`;
+            }, 2000);
+        };
 
         function renderChannels() {
             const list = document.getElementById('channel-list');
@@ -574,7 +600,7 @@
             document.getElementById('modal-content').innerHTML = `
             <div class="space-y-4">
                 ${sigs.length === 0 ? '<div class="text-gray-500 text-center">No trades recorded.</div>' : ''}
-                ${sigs.map(s => {
+                ${sigs.map((s, i) => {
                 const isWin = s.outcome === 'WIN';
                 const isLoss = s.outcome === 'LOSS';
                 const isBuy = s.action === 'BUY';
@@ -599,11 +625,21 @@
                     lossPips = (diff * multiplier).toFixed(2);
                 }
 
+                // PERFORMANCE TAGS
+                let tagsHtml = '';
+                if (s.tags && s.tags.includes('TP_SIGNAL')) tagsHtml += `<span class="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold ml-2">TP_SIGNAL</span>`;
+                if (s.tags && s.tags.includes('EVIL')) tagsHtml += `<span class="text-[10px] bg-red-700 text-white px-1.5 py-0.5 rounded font-bold ml-2 shadow-sm uppercase">EVIL</span>`;
+                if (s.tags && s.tags.includes('ERROR')) tagsHtml += `<span class="text-[10px] bg-gray-500 text-white px-1.5 py-0.5 rounded font-bold ml-2">ERROR</span>`;
+
                 return `
                     <div class="bg-white dark:bg-[#0b1118] p-4 rounded border-l-4 ${borderClass} flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg transition-colors border max-w-full">
                         <div class="mb-2 md:mb-0 w-full">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="px-3 py-1 rounded font-bold text-xs md:text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-gray-100 dark:bg-[#1c2531] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded text-xs font-mono font-bold">#${i + 1}</span>
+                                    <span class="px-3 py-1 rounded font-bold text-xs md:text-xs uppercase ${typeClass} tracking-wide border border-current">${s.action} ${s.asset || 'GOLD'}</span>
+                                    ${tagsHtml}
+                                </div>
                                 <span class="text-xs text-gray-500">${new Date(s.timestamp * 1000).toLocaleString('en-GB')}</span>
                             </div>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm md:text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-[#161d27] p-2 rounded">
@@ -634,12 +670,13 @@
         window.openEquity = () => {
             const savedBalance = localStorage.getItem('eq_balance') || 10000;
             const savedRisk = localStorage.getItem('eq_risk') || 1;
-            const savedRR = localStorage.getItem('eq_rr') || 2;
+            const savedTp = localStorage.getItem('eq_tp') || 20;
+            const savedSl = localStorage.getItem('eq_sl') || ""; // Default empty (use provider)
 
-            document.getElementById('modal-title').innerText = "Equity Curve Calculator";
+            document.getElementById('modal-title').innerText = "Dynamic Performance Calculator";
             document.getElementById('modal-content').innerHTML = `
                 <div class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
                             <input type="number" id="eq-balance" value="${savedBalance}" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
@@ -649,8 +686,12 @@
                             <input type="number" id="eq-risk" value="${savedRisk}" step="0.1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Reward Ratio (R:R)</label>
-                            <input type="number" id="eq-rr" value="${savedRR}" step="0.5" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
+                            <label class="block text-xs text-purple-500 font-bold mb-1">Target TP (Pips)</label>
+                            <input type="number" id="eq-tp" value="${savedTp}" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-purple-500/30 dark:border-purple-500/50 rounded p-2 text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-500 font-bold mb-1">Custom SL (Pips)</label>
+                            <input type="number" id="eq-sl" value="${savedSl}" placeholder="Provider SL" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-red-500/30 dark:border-red-500/50 rounded p-2 text-gray-900 dark:text-white focus:border-red-500 outline-none transition font-mono">
                         </div>
                     </div>
                     
@@ -658,39 +699,78 @@
                         <canvas id="equityChart"></canvas>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                    <div class="grid grid-cols-4 gap-2 md:gap-4 text-center">
+                        <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Win Rate</div>
+                            <div id="eq-rate" class="text-lg font-bold text-yellow-500 font-mono">0%</div>
+                        </div>
+                        <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Wins</div>
+                            <div id="eq-wins" class="text-lg font-bold text-green-500 font-mono">0</div>
+                        </div>
+                        <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Losses</div>
+                            <div id="eq-losses" class="text-lg font-bold text-red-500 font-mono">0</div>
+                        </div>
+                        <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Net Pips</div>
+                            <div id="eq-pips" class="text-lg font-bold text-blue-500 font-mono">0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center border-t border-gray-200 dark:border-[#232d3d] pt-4">
+                        <div>
                             <div class="text-xs text-gray-500 mb-1">Total Trades</div>
                             <div id="eq-total" class="text-xl font-bold text-gray-900 dark:text-white font-mono">0</div>
                         </div>
-                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                        <div>
                             <div class="text-xs text-gray-500 mb-1">Max Drawdown</div>
                             <div id="eq-dd" class="text-xl font-bold text-red-500 font-mono">0%</div>
                         </div>
-                        <div class="p-4 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
+                        <div>
                             <div class="text-xs text-gray-500 mb-1">Final Balance</div>
                             <div id="eq-final" class="text-xl font-bold text-green-500 font-mono">$0</div>
                         </div>
                     </div>
-                    <div class="text-[10px] text-gray-400 text-center italic">Model assumes fixed risk & R:R on realized WINS/LOSSES.</div>
+                    <div class="text-[10px] text-gray-400 text-center italic">
+                        Simulation based on "Max Run" data. Ignores ERROR/EVIL signals. 
+                        Assume Win if Max Run >= Target TP.
+                    </div>
                 </div>
                 `;
             document.getElementById('modal-bg').classList.remove('hidden');
-            // Wait for modal to render
             setTimeout(calcEquity, 50);
         };
 
         window.calcEquity = () => {
             const balanceStart = parseFloat(document.getElementById('eq-balance').value) || 10000;
             const riskPct = parseFloat(document.getElementById('eq-risk').value) || 1;
-            const rr = parseFloat(document.getElementById('eq-rr').value) || 2;
+            const targetTp = parseFloat(document.getElementById('eq-tp').value) || 20;
+            const customSl = parseFloat(document.getElementById('eq-sl').value); // Can be NaN
 
             localStorage.setItem('eq_balance', balanceStart);
             localStorage.setItem('eq_risk', riskPct);
-            localStorage.setItem('eq_rr', rr);
+            localStorage.setItem('eq_tp', targetTp);
+            localStorage.setItem('eq_sl', document.getElementById('eq-sl').value);
 
+            // Filter Valid Signals
             const sigs = allData
-                .filter(m => m.channel_name === currentChannel && m.is_signal && (m.outcome === 'WIN' || m.outcome === 'LOSS'))
+                .filter(m => {
+                    if (m.channel_name !== currentChannel) return false;
+                    if (!m.is_signal) return false;
+                    // Ignore Errors (Outcome or Tag)
+                    if (m.outcome === 'ERROR' || (m.tags && m.tags.includes('ERROR'))) return false;
+                    // Ignore Open/Pending for simulation? 
+                    // Actually, if MaxRun > Target, it's a realized win even if technically open.
+                    // But if < Target, is it a loss yet?
+                    // If outcome is LIVE and < Target, we assume PENDING (Skip)?
+                    // Or current floating?
+                    // User wants "Profitability", implies closed. 
+                    // If we skip pending, we assume resolved.
+                    // Let's include ONLY if Outcome is WIN/LOSS/TIMEOUT, OR if MaxRun > Target (already won).
+                    if (m.outcome === 'LIVE' && (m.max_run_pips || 0) < targetTp) return false;
+                    return true;
+                })
                 .sort((a, b) => a.timestamp - b.timestamp);
 
             let balance = balanceStart;
@@ -699,33 +779,76 @@
             const dataPoints = [balanceStart];
             const labels = ['Start'];
 
+            let simWins = 0;
+            let simLosses = 0;
+            let netPips = 0;
+
             sigs.forEach((s, i) => {
                 const riskAmount = balance * (riskPct / 100);
-                if (s.outcome === 'WIN') {
-                    const profit = riskAmount * rr;
-                    balance += profit;
+                const maxRun = s.max_run_pips || 0;
+
+                // Determine Risk Pips (Provider vs Custom)
+                let riskPips = 0;
+                if (!isNaN(customSl) && customSl > 0) {
+                    riskPips = customSl;
+                } else if (s.sl && s.entry) {
+                    // Calc Provider Risk
+                    const diff = Math.abs((s.market_at_time || s.entry) - s.sl);
+                    const multiplier = (s.asset === 'J75') ? 1 : 10;
+                    riskPips = diff * multiplier;
                 } else {
+                    riskPips = 50; // Fallback default risk if undetermined
+                }
+                if (riskPips < 5) riskPips = 50; // Safety floor
+
+                // Determine Outcome
+                if (maxRun >= targetTp) {
+                    // WIN
+                    // Profit = RiskAmount * (Reward / Risk)
+                    const profit = riskAmount * (targetTp / riskPips);
+                    balance += profit;
+                    simWins++;
+                    netPips += targetTp;
+                } else {
+                    // LOSS
+                    // Loss = RiskAmount (1R)
                     balance -= riskAmount;
+                    simLosses++;
+                    netPips -= riskPips;
                 }
 
                 if (balance > maxBalance) maxBalance = balance;
-                const dd = ((maxBalance - balance) / maxBalance) * 100;
+                if (balance <= 0) balance = 0;
+                const dd = maxBalance > 0 ? ((maxBalance - balance) / maxBalance) * 100 : 0;
                 if (dd > maxDD) maxDD = dd;
 
                 dataPoints.push(balance);
-                labels.push(`#${i + 1} `);
+                labels.push(`#${i + 1}`);
             });
 
-            document.getElementById('eq-total').innerText = sigs.length;
+            // Update Stats
+            const total = simWins + simLosses;
+            const winRate = total > 0 ? ((simWins / total) * 100).toFixed(1) : "0.0";
+
+            document.getElementById('eq-rate').innerText = winRate + '%';
+            document.getElementById('eq-wins').innerText = simWins;
+            document.getElementById('eq-losses').innerText = simLosses;
+            document.getElementById('eq-pips').innerText = userFormat(netPips);
+            document.getElementById('eq-pips').className = `text-lg font-bold font-mono ${netPips >= 0 ? 'text-blue-500' : 'text-red-500'}`;
+
+            document.getElementById('eq-total').innerText = total;
             document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
             document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
 
+            renderChart(labels, dataPoints, balance >= balanceStart, document.documentElement.classList.contains('dark'));
+        };
+
+        function renderChart(labels, data, isProfit, isDark) {
             const ctx = document.getElementById('equityChart').getContext('2d');
             if (equityChartInstance) equityChartInstance.destroy();
 
-            const isDark = document.documentElement.classList.contains('dark');
-            const color = balance >= balanceStart ? '#10b981' : '#ef4444';
+            const color = isProfit ? '#10b981' : '#ef4444';
             const gridColor = isDark ? '#232d3d' : '#e5e7eb';
             const tickColor = isDark ? '#9ca3af' : '#4b5563';
 
@@ -735,12 +858,12 @@
                     labels: labels,
                     datasets: [{
                         label: 'Equity',
-                        data: dataPoints,
+                        data: data,
                         borderColor: color,
                         backgroundColor: (context) => {
                             const ctx = context.chart.ctx;
                             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                            gradient.addColorStop(0, color + '20'); // Low opacity fill
+                            gradient.addColorStop(0, color + '20');
                             gradient.addColorStop(1, color + '00');
                             return gradient;
                         },
@@ -758,9 +881,7 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            callbacks: {
-                                label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
-                            },
+                            callbacks: { label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 }) },
                             backgroundColor: isDark ? '#161d27' : '#ffffff',
                             titleColor: isDark ? '#fff' : '#000',
                             bodyColor: isDark ? '#ccc' : '#4b5563',
@@ -774,16 +895,17 @@
                         x: { display: false },
                         y: {
                             grid: { color: gridColor },
-                            ticks: {
-                                color: tickColor,
-                                callback: (val) => '$' + val.toLocaleString()
-                            },
+                            ticks: { color: tickColor, callback: (val) => '$' + val.toLocaleString() },
                             border: { display: false }
                         }
                     }
                 }
             });
-        };
+        }
+
+        function userFormat(num) {
+            return (num > 0 ? '+' : '') + num.toFixed(1);
+        }
 
         async function refreshSignal(msgId) {
             const btn = event.currentTarget;
