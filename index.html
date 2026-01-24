@@ -676,40 +676,62 @@
             document.getElementById('modal-title').innerText = "Dynamic Performance Calculator";
             document.getElementById('modal-content').innerHTML = `
                 <div class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Start Balance ($)</label>
-                            <input type="number" id="eq-balance" value="${savedBalance}" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Risk per Trade (%)</label>
-                            <input type="number" id="eq-risk" value="${savedRisk}" step="0.1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-purple-500 font-bold mb-1">Target TP (Pips)</label>
-                            <input type="number" id="eq-tp" value="${savedTp}" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-purple-500/30 dark:border-purple-500/50 rounded p-2 text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-red-500 font-bold mb-1">Custom SL (Pips)</label>
-                            <input type="number" id="eq-sl" value="${savedSl}" placeholder="Provider SL" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-red-500/30 dark:border-red-500/50 rounded p-2 text-gray-900 dark:text-white focus:border-red-500 outline-none transition font-mono">
-                        </div>
-                    </div>
                     
                     <div class="bg-white dark:bg-[#0b1118] p-4 rounded-lg border border-gray-200 dark:border-[#232d3d] shadow-sm relative h-64">
                         <canvas id="equityChart"></canvas>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Starting Balance</label>
+                             <input type="number" id="eq-balance" value="${savedBalance}" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sim Mode</label>
+                            <select id="eq-sim-mode" onchange="toggleSimMode()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500">
+                                <option value="QUICK">⚡ Quick (Estimator)</option>
+                                <option value="SCIENTIFIC">🔬 Scientific (Real Tick)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Risk Mode</label>
+                            <select id="eq-risk-mode" onchange="updateRiskLabel()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500">
+                                <option value="PERCENT">Risk Percentage (%)</option>
+                                <option value="FIXED">Fixed Lot Size</option>
+                                <option value="DYNAMIC">Dynamic (Entry Quality)</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label id="lbl-risk-val" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Risk per Trade (%)</label>
+                            <input type="number" id="eq-risk" value="${savedRisk}" step="0.1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-gray-200 dark:border-[#232d3d] rounded p-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono">
+                        </div>
+                         <div>
+                            <label class="block text-xs text-purple-500 font-bold mb-1">Target TP (Pips)</label>
+                            <input type="number" id="eq-tp" value="${savedTp}" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-purple-500/30 dark:border-purple-500/50 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-500 font-bold mb-1">Custom SL (Pips)</label>
+                            <input type="number" id="eq-sl" value="${savedSl}" placeholder="Provider SL" step="1" onchange="calcEquity()" class="w-full bg-gray-50 dark:bg-[#0b1118] border border-red-500/30 dark:border-red-500/50 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-red-500 outline-none transition font-mono">
+                        </div>
+                    </div>
+                    
+
+
+                    <button id="btn-run-sim" onclick="calcEquity()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                        <span>▶ Start Simulation</span>
+                    </button>
+
                     <div class="grid grid-cols-4 gap-2 md:gap-4 text-center">
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
-                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Win Rate</div>
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Win Rate</div>
                             <div id="eq-rate" class="text-lg font-bold text-yellow-500 font-mono">0%</div>
                         </div>
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
-                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Wins</div>
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Wins</div>
                             <div id="eq-wins" class="text-lg font-bold text-green-500 font-mono">0</div>
                         </div>
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
-                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Sim Losses</div>
+                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Losses</div>
                             <div id="eq-losses" class="text-lg font-bold text-red-500 font-mono">0</div>
                         </div>
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
@@ -732,117 +754,250 @@
                             <div id="eq-final" class="text-xl font-bold text-green-500 font-mono">$0</div>
                         </div>
                     </div>
-                    <div class="text-[10px] text-gray-400 text-center italic">
-                        Simulation based on "Max Run" data. Ignores ERROR/EVIL signals. 
-                        Assume Win if Max Run >= Target TP.
+                    <div id="sim-status" class="text-[10px] text-gray-400 text-center italic hidden">
+                        Initializing...
                     </div>
                 </div>
                 `;
             document.getElementById('modal-bg').classList.remove('hidden');
-            setTimeout(calcEquity, 50);
+
+            // Helper to toggle UI
+            window.toggleSimMode = () => {
+                const mode = document.getElementById('eq-sim-mode').value;
+                const btn = document.getElementById('btn-run-sim');
+                if (mode === 'SCIENTIFIC') {
+                    btn.innerText = "🔬 Run Tick Simulation (Slow)";
+                    btn.classList.replace('bg-blue-600', 'bg-purple-600');
+                    btn.classList.replace('hover:bg-blue-700', 'hover:bg-purple-700');
+                } else {
+                    btn.innerText = "⚡ Quick Estimate";
+                    btn.classList.replace('bg-purple-600', 'bg-blue-600');
+                    btn.classList.replace('hover:bg-purple-700', 'hover:bg-blue-700');
+                }
+            };
+
+            window.updateRiskLabel = () => {
+                const mode = document.getElementById('eq-risk-mode').value;
+                const lbl = document.getElementById('lbl-risk-val');
+                if (mode === 'FIXED' || mode === 'DYNAMIC') lbl.innerText = "Base Lot Size";
+                else lbl.innerText = "Risk % per Trade";
+            };
+
+            // Init UI
+            calcEquity();
         };
 
-        window.calcEquity = () => {
+        window.calcEquity = async () => {
             const balanceStart = parseFloat(document.getElementById('eq-balance').value) || 10000;
-            const riskPct = parseFloat(document.getElementById('eq-risk').value) || 1;
+            const riskVal = parseFloat(document.getElementById('eq-risk').value) || 1;
             const targetTp = parseFloat(document.getElementById('eq-tp').value) || 20;
-            const customSl = parseFloat(document.getElementById('eq-sl').value); // Can be NaN
+            const customSl = parseFloat(document.getElementById('eq-sl').value);
+            const simMode = document.getElementById('eq-sim-mode').value;
+            const riskMode = document.getElementById('eq-risk-mode').value;
 
             localStorage.setItem('eq_balance', balanceStart);
-            localStorage.setItem('eq_risk', riskPct);
+            localStorage.setItem('eq_risk', riskVal);
             localStorage.setItem('eq_tp', targetTp);
             localStorage.setItem('eq_sl', document.getElementById('eq-sl').value);
 
-            // Filter Valid Signals
-            const sigs = allData
-                .filter(m => {
-                    if (m.channel_name !== currentChannel) return false;
-                    if (!m.is_signal) return false;
-                    // Ignore Errors (Outcome or Tag)
-                    if (m.outcome === 'ERROR' || (m.tags && m.tags.includes('ERROR'))) return false;
-                    // Ignore Open/Pending for simulation? 
-                    // Actually, if MaxRun > Target, it's a realized win even if technically open.
-                    // But if < Target, is it a loss yet?
-                    // If outcome is LIVE and < Target, we assume PENDING (Skip)?
-                    // Or current floating?
-                    // User wants "Profitability", implies closed. 
-                    // If we skip pending, we assume resolved.
-                    // Let's include ONLY if Outcome is WIN/LOSS/TIMEOUT, OR if MaxRun > Target (already won).
-                    if (m.outcome === 'LIVE' && (m.max_run_pips || 0) < targetTp) return false;
-                    return true;
-                })
-                .sort((a, b) => a.timestamp - b.timestamp);
+            if (simMode === 'SCIENTIFIC') {
+                await runScientificSim(balanceStart, riskVal, targetTp, customSl, riskMode);
+                return;
+            }
 
-            let balance = balanceStart;
-            let maxBalance = balanceStart;
-            let maxDD = 0;
-            const dataPoints = [balanceStart];
-            const labels = ['Start'];
+            // --- QUICK MODE (Frontend) ---
+            const statusDiv = document.getElementById('sim-status');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = "Running Quick Estimate...";
 
-            let simWins = 0;
-            let simLosses = 0;
-            let netPips = 0;
+            try {
+                console.log(`[QuickSim] Starting for Channel: ${currentChannel}`);
+                console.log(`[QuickSim] Base Balance: ${balanceStart}, Risk: ${riskVal}`);
+                console.log(`[QuickSim] Total Global Data: ${allData.length}`);
 
-            sigs.forEach((s, i) => {
-                const riskAmount = balance * (riskPct / 100);
-                const maxRun = s.max_run_pips || 0;
+                // Filter Valid Signals
+                const sigs = allData
+                    .filter(m => {
+                        if (m.channel_name !== currentChannel) return false;
+                        if (!m.is_signal) return false;
+                        if (m.outcome === 'ERROR' || (m.tags && m.tags.includes('ERROR'))) return false;
+                        // Loose check for LIVE: If max_run exists, use it.
+                        if (m.outcome === 'LIVE' && (m.max_run_pips || 0) < targetTp) {
+                            // console.log("Skipping pending live trade:", m.msg_id);
+                            return false;
+                        }
+                        return true;
+                    })
+                    .sort((a, b) => a.timestamp - b.timestamp);
 
-                // Determine Risk Pips (Provider vs Custom)
-                let riskPips = 0;
-                if (!isNaN(customSl) && customSl > 0) {
-                    riskPips = customSl;
-                } else if (s.sl && s.entry) {
-                    // Calc Provider Risk
-                    const diff = Math.abs((s.market_at_time || s.entry) - s.sl);
-                    const multiplier = (s.asset === 'J75') ? 1 : 10;
-                    riskPips = diff * multiplier;
-                } else {
-                    riskPips = 50; // Fallback default risk if undetermined
-                }
-                if (riskPips < 5) riskPips = 50; // Safety floor
-
-                // Determine Outcome
-                if (maxRun >= targetTp) {
-                    // WIN
-                    // Profit = RiskAmount * (Reward / Risk)
-                    const profit = riskAmount * (targetTp / riskPips);
-                    balance += profit;
-                    simWins++;
-                    netPips += targetTp;
-                } else {
-                    // LOSS
-                    // Loss = RiskAmount (1R)
-                    balance -= riskAmount;
-                    simLosses++;
-                    netPips -= riskPips;
+                console.log(`[QuickSim] Filtered Signals: ${sigs.length}`);
+                if (sigs.length === 0) {
+                    statusDiv.innerText = "⚠️ No eligible signals found (Check Filter/Channel).";
+                    return;
                 }
 
-                if (balance > maxBalance) maxBalance = balance;
-                if (balance <= 0) balance = 0;
-                const dd = maxBalance > 0 ? ((maxBalance - balance) / maxBalance) * 100 : 0;
-                if (dd > maxDD) maxDD = dd;
+                let balance = balanceStart;
+                let maxBalance = balanceStart;
+                let maxDD = 0;
+                const dataPoints = [balanceStart];
+                const labels = ['Start'];
 
-                dataPoints.push(balance);
-                labels.push(`#${i + 1}`);
-            });
+                let simWins = 0;
+                let simLosses = 0;
+                let netPips = 0;
 
-            // Update Stats
-            const total = simWins + simLosses;
-            const winRate = total > 0 ? ((simWins / total) * 100).toFixed(1) : "0.0";
+                sigs.forEach((s, i) => {
+                    const riskAmount = balance * (riskVal / 100);
+                    const maxRun = s.max_run_pips || 0;
 
-            document.getElementById('eq-rate').innerText = winRate + '%';
-            document.getElementById('eq-wins').innerText = simWins;
-            document.getElementById('eq-losses').innerText = simLosses;
-            document.getElementById('eq-pips').innerText = userFormat(netPips);
-            document.getElementById('eq-pips').className = `text-lg font-bold font-mono ${netPips >= 0 ? 'text-blue-500' : 'text-red-500'}`;
+                    // Determine Risk Pips (Provider vs Custom)
+                    let riskPips = 0;
+                    if (!isNaN(customSl) && customSl > 0) {
+                        riskPips = customSl;
+                    } else if (s.sl && s.entry) {
+                        // Calc Provider Risk
+                        const diff = Math.abs((s.market_at_time || s.entry) - s.sl);
+                        const multiplier = (s.asset === 'J75') ? 1 : 10;
+                        riskPips = diff * multiplier;
+                    } else {
+                        riskPips = 50; // Fallback default risk if undetermined
+                    }
+                    if (riskPips < 5) riskPips = 50; // Safety floor
 
-            document.getElementById('eq-total').innerText = total;
-            document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
-            document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
+                    // Determine Outcome
+                    if (maxRun >= targetTp) {
+                        // WIN
+                        // Profit = RiskAmount * (Reward / Risk)
+                        const profit = riskAmount * (targetTp / riskPips);
+                        balance += profit;
+                        simWins++;
+                        netPips += targetTp;
+                    } else {
+                        // LOSS
+                        // Loss = RiskAmount (1R)
+                        balance -= riskAmount;
+                        simLosses++;
+                        netPips -= riskPips;
+                    }
 
-            renderChart(labels, dataPoints, balance >= balanceStart, document.documentElement.classList.contains('dark'));
+                    if (balance > maxBalance) maxBalance = balance;
+                    if (balance <= 0) balance = 0;
+                    const dd = maxBalance > 0 ? ((maxBalance - balance) / maxBalance) * 100 : 0;
+                    if (dd > maxDD) maxDD = dd;
+
+                    dataPoints.push(balance);
+                    labels.push(`#${i + 1}`);
+                });
+
+                // Update Stats
+                const total = simWins + simLosses;
+                const winRate = total > 0 ? ((simWins / total) * 100).toFixed(1) : "0.0";
+
+                document.getElementById('eq-rate').innerText = winRate + '%';
+                document.getElementById('eq-wins').innerText = simWins;
+                document.getElementById('eq-losses').innerText = simLosses;
+                document.getElementById('eq-pips').innerText = userFormat(netPips);
+                document.getElementById('eq-pips').className = `text-lg font-bold font-mono ${netPips >= 0 ? 'text-blue-500' : 'text-red-500'}`;
+
+                document.getElementById('eq-total').innerText = total;
+                document.getElementById('eq-dd').innerText = maxDD.toFixed(2) + '%';
+                document.getElementById('eq-final').innerText = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('eq-final').className = `text-xl font-bold font-mono ${balance >= balanceStart ? 'text-green-500' : 'text-red-500'}`;
+
+                statusDiv.innerText = "Quick Estimate Complete.";
+                renderChart(labels, dataPoints, balance >= balanceStart, document.documentElement.classList.contains('dark'));
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "⚠️ Error in Quick Estimate: " + err.message;
+            }
         };
+
+        async function runScientificSim(balance, riskVal, tp, sl, riskMode) {
+            const statusDiv = document.getElementById('sim-status');
+            const btn = document.getElementById('btn-run-sim');
+
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = '<span class="animate-pulse">🔬 Requesting Simulation Engine...</span>';
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                // 1. Submit Job
+                const { data: job, error } = await dbClient
+                    .from('simulation_requests')
+                    .insert({
+                        channel_name: currentChannel,
+                        params: {
+                            balance: balance,
+                            risk_val: riskVal,
+                            risk_mode: riskMode,
+                            tp: tp,
+                            sl: sl
+                        },
+                        status: 'PENDING'
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // 2. Poll for Result
+                let attempts = 0;
+                const maxAttempts = 60;
+
+                const poll = setInterval(async () => {
+                    attempts++;
+                    statusDiv.innerHTML = `<span class="animate-pulse">⏳ Simulating Trades... (${attempts}s)</span>`;
+
+                    const { data: updated } = await dbClient
+                        .from('simulation_requests')
+                        .select('*')
+                        .eq('id', job.id)
+                        .single();
+
+                    if (updated && updated.status === 'COMPLETED') {
+                        clearInterval(poll);
+                        displaySimResults(updated.result);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(poll);
+                        statusDiv.innerText = "❌ Simulation Timed Out.";
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50');
+                    }
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "❌ Error starting simulation: " + (err.message || JSON.stringify(err));
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+
+        function displaySimResults(res) {
+            const btn = document.getElementById('btn-run-sim');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            document.getElementById('sim-status').innerText = "✅ Scientific Simulation Complete.";
+
+            // Update UI
+            document.getElementById('eq-rate').innerText = res.win_rate + '%';
+            document.getElementById('eq-wins').innerText = res.wins;
+            document.getElementById('eq-losses').innerText = res.losses;
+            document.getElementById('eq-pips').innerText = userFormat(res.net_pips);
+            document.getElementById('eq-pips').className = `text-lg font-bold font-mono ${res.net_pips >= 0 ? 'text-blue-500' : 'text-red-500'}`;
+
+            document.getElementById('eq-total').innerText = res.total_trades;
+            document.getElementById('eq-dd').innerText = res.max_drawdown + '%';
+            document.getElementById('eq-final').innerText = '$' + res.final_balance.toLocaleString();
+            document.getElementById('eq-final').className = `text-xl font-bold font-mono ${res.final_balance >= parseFloat(localStorage.getItem('eq_balance')) ? 'text-green-500' : 'text-red-500'}`;
+
+            // Chart
+            const labels = res.equity_curve.map((p, i) => i === 0 ? 'Start' : `#${i}`);
+            const data = res.equity_curve.map(p => p.y);
+            renderChart(labels, data, true, document.documentElement.classList.contains('dark'));
+        }
 
         function renderChart(labels, data, isProfit, isDark) {
             const ctx = document.getElementById('equityChart').getContext('2d');
