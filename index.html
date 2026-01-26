@@ -692,6 +692,10 @@
                                 <option value="QUICK">⚡ Quick (Estimator)</option>
                                 <option value="SCIENTIFIC">🔬 Scientific (Real Tick)</option>
                             </select>
+                            <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                <input type="checkbox" id="eq-is-micro" class="form-checkbox h-3.5 w-3.5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Micro Mode (x0.01)</span>
+                            </label>
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Risk Mode</label>
@@ -721,7 +725,7 @@
                         <span>▶ Start Simulation</span>
                     </button>
 
-                    <div class="grid grid-cols-4 gap-2 md:gap-4 text-center">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 text-center">
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
                             <div class="text-[10px] text-gray-500 mb-1 uppercase">Win Rate</div>
                             <div id="eq-rate" class="text-lg font-bold text-yellow-500 font-mono">0%</div>
@@ -734,15 +738,7 @@
                             <div class="text-[10px] text-gray-500 mb-1 uppercase">Losses</div>
                             <div id="eq-losses" class="text-lg font-bold text-red-500 font-mono">0</div>
                         </div>
-                        <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
-                            <div class="text-[10px] text-gray-500 mb-1 uppercase">Net Pips</div>
-                            <div id="eq-pips" class="text-lg font-bold text-blue-500 font-mono">0</div>
-                            <option value="SCIENTIFIC">Scientific (Tick Data)</option>
-                        </select>
-                         <label class="flex items-center gap-2 mt-3 cursor-pointer select-none">
-                            <input type="checkbox" id="eq-is-micro" class="form-checkbox h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                            <span class="text-xs text-gray-300 font-bold">Micro Account (x0.01)</span>
-                        </label>
+                        </div>
                     </div>
                 </div>
 
