@@ -105,9 +105,9 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="location.reload()"
-                class="text-gray-600 dark:text-gray-300 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="triggerMasterSync(this)"
+                class="text-gray-600 dark:text-gray-300 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition group">
+                <svg class="w-5 h-5 group-active:animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                     </path>
@@ -133,14 +133,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 mb-4">
-                    <button onclick="location.reload()"
-                        class="flex-1 flex items-center justify-center gap-2 p-2 bg-gray-100 dark:bg-gray-900 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition text-sm font-semibold border border-gray-200 dark:border-gray-800">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="triggerMasterSync(this)"
+                        class="flex-1 flex items-center justify-center gap-2 p-2 bg-gray-100 dark:bg-gray-900 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition text-sm font-semibold border border-gray-200 dark:border-gray-800 group">
+                        <svg class="w-4 h-4 group-active:animate-spin" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                             </path>
                         </svg>
-                        Reload
+                        Sync All
                     </button>
                     <button onclick="toggleTheme()"
                         class="p-2 bg-gray-100 dark:bg-gray-900 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition border border-gray-200 dark:border-gray-800">
@@ -252,6 +253,35 @@
             const overlay = document.getElementById('mobile-overlay');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
+        }
+
+        // Master Sync
+        async function triggerMasterSync(btn) {
+            // Visual feedback
+            const svg = btn.querySelector('svg');
+            if (svg) svg.classList.add('animate-spin');
+
+            // Disable button temporarily
+            btn.disabled = true;
+
+            try {
+                // Set force_sync = true for ALL active channels
+                const { error } = await dbClient
+                    .from('provider_stats')
+                    .update({ force_sync: true })
+                    .eq('active', true);
+
+                if (error) throw error;
+
+                // Show simple feedback
+                alert('Output Sync Initiated. Using 2s delay. The backend will pick this up shortly.');
+            } catch (e) {
+                console.error('Sync failed', e);
+                alert('Sync trigger failed: ' + e.message);
+            } finally {
+                if (svg) svg.classList.remove('animate-spin');
+                btn.disabled = false;
+            }
         }
 
         // Fetch Initial Data (Get last 2000 messages to ensure recent ones shown)
@@ -453,7 +483,7 @@
             }
 
             feed.innerHTML = msgs.map(m => {
-                const time = new Date(m.timestamp * 1000).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const time = new Date(m.timestamp * 1000).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
                 let tagsHtml = '';
                 if (m.is_signal) tagsHtml += `<span class="tag-SIGNAL text-[10px] px-2 py-0.5 rounded font-bold mr-2">SIGNAL</span>`;
