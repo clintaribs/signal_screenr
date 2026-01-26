@@ -508,6 +508,7 @@
                         <th class="p-3 text-center">Loss</th>
                         <th class="p-3 text-center">Net Pips</th>
                         <th class="p-3 text-center">Trades</th>
+                        <th class="p-3 text-center">Active</th>
                         <th class="p-3 text-center">TP Sigs</th>
                         <th class="p-3 text-center">Evil</th>
                         <th class="p-3 text-center">Errors</th>
@@ -526,6 +527,7 @@
                             <td class="p-3 text-center font-bold text-red-500">${s.losses}</td>
                             <td class="p-3 text-center font-bold ${s.net_profit >= 0 ? 'text-green-500' : 'text-red-500'}">${s.net_profit != null ? (s.net_profit > 0 ? '+' : '') + s.net_profit : '--'}</td>
                             <td class="p-3 text-center text-gray-700 dark:text-gray-300">${s.total || 0}</td>
+                            <td class="p-3 text-center text-blue-500 font-bold animate-pulse">${s.live_count || 0}</td>
                             <td class="p-3 text-center text-purple-500 font-bold">${s.tp_signals || 0}</td>
                             <td class="p-3 text-center text-red-600 font-extrabold">${s.evil_signals || 0}</td>
                             <td class="p-3 text-center text-gray-500 font-bold">${s.errors || 0}</td>
@@ -580,6 +582,10 @@
                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-gray-500">${stats.errors || 0}</div>
                     <div class="text-gray-500 text-xs md:text-sm mt-1">Errors</div>
+                </div>
+                 <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
+                    <div class="text-2xl md:text-3xl font-bold text-blue-500 animate-pulse">${stats.live_count || 0}</div>
+                    <div class="text-gray-500 text-xs md:text-sm mt-1">Live Trades</div>
                 </div>
                  <div class="bg-white dark:bg-[#0b1118] p-4 md:p-6 rounded-lg text-center border border-gray-200 dark:border-[#232d3d]">
                     <div class="text-2xl md:text-3xl font-bold text-orange-400">${stats.edits}</div>
