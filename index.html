@@ -737,8 +737,14 @@
                         <div class="p-3 bg-gray-50 dark:bg-[#0b1118] rounded border border-gray-200 dark:border-[#232d3d]">
                             <div class="text-[10px] text-gray-500 mb-1 uppercase">Net Pips</div>
                             <div id="eq-pips" class="text-lg font-bold text-blue-500 font-mono">0</div>
-                        </div>
+                            <option value="SCIENTIFIC">Scientific (Tick Data)</option>
+                        </select>
+                         <label class="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                            <input type="checkbox" id="eq-is-micro" class="form-checkbox h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                            <span class="text-xs text-gray-300 font-bold">Micro Account (x0.01)</span>
+                        </label>
                     </div>
+                </div>
 
                     <div class="grid grid-cols-3 gap-4 text-center border-t border-gray-200 dark:border-[#232d3d] pt-4">
                         <div>
@@ -794,6 +800,7 @@
             const customSl = parseFloat(document.getElementById('eq-sl').value);
             const simMode = document.getElementById('eq-sim-mode').value;
             const riskMode = document.getElementById('eq-risk-mode').value;
+            const isMicro = document.getElementById('eq-is-micro').checked;
 
             localStorage.setItem('eq_balance', balanceStart);
             localStorage.setItem('eq_risk', riskVal);
@@ -801,7 +808,7 @@
             localStorage.setItem('eq_sl', document.getElementById('eq-sl').value);
 
             if (simMode === 'SCIENTIFIC') {
-                await runScientificSim(balanceStart, riskVal, targetTp, customSl, riskMode);
+                await runScientificSim(balanceStart, riskVal, targetTp, customSl, riskMode, isMicro);
                 return;
             }
 
@@ -913,7 +920,7 @@
             }
         };
 
-        async function runScientificSim(balance, riskVal, tp, sl, riskMode) {
+        async function runScientificSim(balance, riskVal, tp, sl, riskMode, isMicro) {
             const statusDiv = document.getElementById('sim-status');
             const btn = document.getElementById('btn-run-sim');
 
@@ -933,7 +940,8 @@
                             risk_val: riskVal,
                             risk_mode: riskMode,
                             tp: tp,
-                            sl: sl
+                            sl: sl,
+                            is_micro: isMicro
                         },
                         status: 'PENDING'
                     })
